@@ -1,0 +1,45 @@
+{
+    "id": "the-glory-online",
+    "type": "system",
+    "title": "The Glory Online",
+    "description": "Sistema de RPG da torre de Aincrad: atributos próprios, Vida, Mana, Maestria por arma e Sword Skills.",
+    "version": "0.0.1",
+    "compatibility": {
+        "minimum": "14",
+        "verified": "14"
+    },
+    "authors": [
+        {
+            "name": "Nelson (SoftMissT)",
+            "url": "https://github.com/SoftMissT"
+        }
+    ],
+    "url": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad",
+    "license": "LICENSE",
+    "readme": "README.md",
+    "bugs": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad/issues",
+    "esmodules": ["src/the-glory-online.mjs"],
+    "styles": ["styles/the-glory-online.css"],
+    "languages": [
+        {
+            "lang": "pt-BR",
+            "name": "Português (Brasil)",
+            "path": "lang/pt-BR.json"
+        }
+    ],
+    "media": [],
+    "grid": {
+        "type": 1,
+        "distance": 1.5,
+        "units": "m"
+    },
+    "primaryTokenAttribute": "health",
+    "secondaryTokenAttribute": "mana",
+    "documentTypes": {
+        "Actor": {
+            "character": {}
+        }
+    },
+    "manifest": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad/releases/latest/download/system.json",
+    "download": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad/releases/latest/download/system.zip"
+}

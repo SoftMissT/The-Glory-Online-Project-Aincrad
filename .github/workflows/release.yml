@@ -1,0 +1,113 @@
+name: Publish The Glory Online
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run tests
+        run: npm test
+
+      - name: Validate version
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const manifest = JSON.parse(
+            fs.readFileSync("system.json", "utf8")
+          );
+
+          const expected = `v${manifest.version}`;
+          const actual = process.env.GITHUB_REF_NAME;
+
+          if (actual !== expected) {
+            throw new Error(`Tag ${actual} != ${expected}`);
+          }
+
+          if (manifest.id !== "the-glory-online") {
+            throw new Error("Invalid system ID");
+          }
+          NODE
+
+      - name: Build release package
+        shell: bash
+        run: |
+          mkdir -p dist/system
+
+          for directory in src styles templates lang; do
+            test -d "$directory"
+            cp -R "$directory" dist/system/
+          done
+
+          cp LICENSE README.md dist/system/
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const manifest = JSON.parse(
+            fs.readFileSync("system.json", "utf8")
+          );
+
+          const tag = process.env.GITHUB_REF_NAME;
+          const repo =
+            "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad";
+
+          const preview = tag.includes("-");
+
+          const url = preview
+            ? `${repo}/releases/download/${tag}`
+            : `${repo}/releases/latest/download`;
+
+          manifest.manifest = `${url}/system.json`;
+          manifest.download = `${url}/system.zip`;
+
+          const output = JSON.stringify(manifest, null, 2) + "\n";
+
+          fs.writeFileSync("dist/system/system.json", output);
+          fs.writeFileSync("dist/system.json", output);
+          NODE
+
+          (
+            cd dist/system
+            zip -qr ../system.zip .
+          )
+
+          unzip -p dist/system.zip system.json > /dev/null
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            gh release create "$GITHUB_REF_NAME" \
+              dist/system.json \
+              dist/system.zip \
+              --verify-tag \
+              --prerelease \
+              --generate-notes
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              dist/system.json \
+              dist/system.zip \
+              --verify-tag \
+              --latest \
+              --generate-notes
+          fi

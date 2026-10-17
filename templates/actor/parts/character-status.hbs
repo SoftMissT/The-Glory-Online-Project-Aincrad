@@ -1,0 +1,76 @@
+<div class='tgo-status'>
+    <section class='tgo-bars'>
+        <div class='tgo-pool'>
+            <span class='tgo-k'>{{localize 'TGO.Sheet.health'}}</span>
+            <div class='tgo-bar'>
+                <input
+                    type='number'
+                    name='system.health.value'
+                    value='{{system.health.value}}'
+                    min='0'
+                    step='1'
+                />
+                <span class='tgo-sep'>/</span>
+                <input
+                    type='number'
+                    name='system.health.max'
+                    value='{{system.health.max}}'
+                    min='0'
+                    step='1'
+                />
+            </div>
+        </div>
+        <div class='tgo-pool'>
+            <span class='tgo-k'>{{localize 'TGO.Sheet.mana'}}</span>
+            <div class='tgo-bar'>
+                <input
+                    type='number'
+                    name='system.mana.value'
+                    value='{{system.mana.value}}'
+                    min='0'
+                    step='1'
+                />
+                <span class='tgo-sep'>/</span>
+                <input
+                    type='number'
+                    name='system.mana.max'
+                    value='{{system.mana.max}}'
+                    min='0'
+                    step='1'
+                />
+            </div>
+        </div>
+        <div class='tgo-ca'>
+            <span class='tgo-k'>{{localize 'TGO.Sheet.ca'}}</span>
+            <strong class='tgo-ca-value'>{{system.ca}}</strong>
+        </div>
+    </section>
+
+    <section class='tgo-attributes'>
+        {{#each attributes}}
+            <label class='tgo-attribute'>
+                <span class='tgo-k'>{{localize this.label}}</span>
+                <input
+                    type='number'
+                    name='system.attributes.{{this.key}}.value'
+                    value='{{this.value}}'
+                    min='0'
+                    step='1'
+                />
+            </label>
+        {{/each}}
+    </section>
+
+    <section class='tgo-masteries'>
+        <span class='tgo-k'>{{localize 'TGO.Sheet.masteries'}}</span>
+        {{#if system.masteries.length}}
+            <ul class='tgo-mastery-list'>
+                {{#each system.masteries}}
+                    <li><span>{{this.type}}</span><strong>{{this.value}}</strong></li>
+                {{/each}}
+            </ul>
+        {{else}}
+            <p class='tgo-empty'>{{localize 'TGO.Sheet.noMasteries'}}</p>
+        {{/if}}
+    </section>
+</div>

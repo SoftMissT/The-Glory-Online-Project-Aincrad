@@ -1,0 +1,23 @@
+{
+    "TGO": {
+        "Sheet": {
+            "character": "Personagem",
+            "name": "Nome",
+            "level": "Nível",
+            "class": "Classe",
+            "subclass": "Trilha",
+            "xp": "XP",
+            "health": "Vida",
+            "mana": "Mana",
+            "ca": "CA",
+            "masteries": "Maestrias",
+            "noMasteries": "Sem maestrias registradas."
+        },
+        "Attribute": {
+            "str": "Força",
+            "agi": "Agilidade",
+            "vit": "Vitalidade",
+            "mind": "Mente"
+        }
+    }
+}

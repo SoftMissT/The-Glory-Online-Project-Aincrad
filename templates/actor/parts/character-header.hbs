@@ -1,0 +1,42 @@
+<header class='tgo-header'>
+    <img
+        class='tgo-portrait'
+        src='{{document.img}}'
+        alt='{{document.name}}'
+        data-action='editImage'
+        data-edit='img'
+    />
+    <div class='tgo-identity'>
+        <input
+            class='tgo-name'
+            type='text'
+            name='name'
+            value='{{document.name}}'
+            placeholder='{{localize "TGO.Sheet.name"}}'
+        />
+        <div class='tgo-meta'>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Sheet.level'}}</span>
+                <input
+                    type='number'
+                    name='system.level'
+                    value='{{system.level}}'
+                    min='1'
+                    step='1'
+                />
+            </label>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Sheet.class'}}</span>
+                <input type='text' name='system.class.base' value='{{system.class.base}}' />
+            </label>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Sheet.subclass'}}</span>
+                <input type='text' name='system.class.subclass' value='{{system.class.subclass}}' />
+            </label>
+        </div>
+    </div>
+    <label class='tgo-field tgo-field-xp'>
+        <span class='tgo-k'>{{localize 'TGO.Sheet.xp'}}</span>
+        <input type='number' name='system.xp' value='{{system.xp}}' min='0' step='1' />
+    </label>
+</header>

@@ -1,0 +1,191 @@
+/* ============================================================================
+   THE GLORY ONLINE tokens e ficha (F1)
+   Direção herdada do protótipo ABSOLUTE DETECTION MATRIX: HUD denso e escuro.
+   Fontes-alvo Orbitron/Rajdhani/Share Tech Mono (OFL) ainda NÃO auto-hospedadas;
+   a pilha abaixo é o fallback deliberado até o OK para embutir os arquivos.
+   ========================================================================== */
+:root {
+    /* superfícies */
+    --tgo-bg-0: #070d16;
+    --tgo-bg-1: #0c1626;
+    --tgo-panel: rgba(13, 22, 38, 0.85);
+    --tgo-line: rgba(0, 243, 255, 0.35);
+    --tgo-line-soft: rgba(148, 163, 184, 0.25);
+    /* texto */
+    --tgo-text: #e0f2fe;
+    --tgo-text-dim: #94a3b8;
+    /* acento e estados (roxo é decorativo: 3.94:1, reprova como texto) */
+    --tgo-accent: #00f3ff;
+    --tgo-accent-dim: rgba(0, 243, 255, 0.12);
+    --tgo-gold: #ffd700;
+    --tgo-danger: #ff2b4a;
+    --tgo-rare: #b026ff;
+    /* tipografia */
+    --tgo-font-display:
+        'Orbitron', 'Bahnschrift', 'Segoe UI Variable Display', system-ui, sans-serif;
+    --tgo-font-ui: 'Rajdhani', 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+    --tgo-font-mono: 'Share Tech Mono', 'Cascadia Mono', Consolas, monospace;
+    /* forma e espaço (base 4px) */
+    --tgo-radius: 2px;
+    --tgo-space-1: 0.25rem;
+    --tgo-space-2: 0.5rem;
+    --tgo-space-3: 0.75rem;
+    --tgo-space-4: 1rem;
+}
+.the-glory-online.sheet.actor .window-content {
+    background: linear-gradient(170deg, var(--tgo-bg-0) 0%, var(--tgo-bg-1) 100%);
+    color: var(--tgo-text);
+    font-family: var(--tgo-font-ui);
+    padding: 0;
+}
+/* ═══ Cabeçalho ═══ */
+.tgo-header {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    gap: var(--tgo-space-3);
+    align-items: center;
+    padding: var(--tgo-space-3) var(--tgo-space-4);
+    background: var(--tgo-panel);
+    border-bottom: 1px solid var(--tgo-line);
+}
+.tgo-portrait {
+    width: 4rem;
+    height: 4rem;
+    object-fit: cover;
+    border: 1px solid var(--tgo-line);
+    border-radius: var(--tgo-radius);
+}
+.tgo-identity {
+    display: grid;
+    gap: var(--tgo-space-2);
+    min-width: 0;
+}
+.tgo-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--tgo-space-3);
+}
+.tgo-field {
+    display: grid;
+    gap: var(--tgo-space-1);
+}
+.tgo-field-xp {
+    justify-items: end;
+}
+/* ═══ STATUS ═══ */
+.tgo-status {
+    display: grid;
+    gap: var(--tgo-space-4);
+    padding: var(--tgo-space-4);
+}
+.tgo-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: var(--tgo-space-4);
+    align-items: end;
+}
+.tgo-pool {
+    display: grid;
+    gap: var(--tgo-space-1);
+}
+.tgo-bar {
+    display: flex;
+    align-items: baseline;
+    gap: var(--tgo-space-1);
+}
+.tgo-bar input {
+    width: 4.5rem;
+}
+.tgo-sep {
+    color: var(--tgo-text-dim);
+}
+.tgo-ca {
+    display: grid;
+    justify-items: center;
+    gap: var(--tgo-space-1);
+    padding: var(--tgo-space-2) var(--tgo-space-3);
+    border: 1px solid var(--tgo-line);
+    border-radius: var(--tgo-radius);
+    background: var(--tgo-accent-dim);
+}
+.tgo-ca-value {
+    font-family: var(--tgo-font-display);
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--tgo-accent);
+}
+.tgo-attributes {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--tgo-space-3);
+}
+.tgo-attribute {
+    display: grid;
+    justify-items: center;
+    gap: var(--tgo-space-2);
+    padding: var(--tgo-space-3) var(--tgo-space-2);
+    background: var(--tgo-panel);
+    border: 1px solid var(--tgo-line-soft);
+    border-radius: var(--tgo-radius);
+}
+.tgo-attribute input {
+    width: 100%;
+    text-align: center;
+    font-size: 1.25rem;
+}
+/* ═══ Maestrias ═══ */
+.tgo-masteries {
+    display: grid;
+    gap: var(--tgo-space-2);
+}
+.tgo-mastery-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--tgo-space-1);
+}
+.tgo-mastery-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--tgo-space-3);
+    padding: var(--tgo-space-2) var(--tgo-space-3);
+    background: var(--tgo-panel);
+    border: 1px solid var(--tgo-line-soft);
+    border-radius: var(--tgo-radius);
+}
+.tgo-empty {
+    margin: 0;
+    color: var(--tgo-text-dim);
+}
+/* ═══ Micro-rótulo e inputs ═══ */
+.tgo-k {
+    font-family: var(--tgo-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tgo-accent);
+}
+.tgo-field-xp .tgo-k {
+    color: var(--tgo-gold);
+}
+.the-glory-online.sheet input[type='number'],
+.the-glory-online.sheet input[type='text'] {
+    background: var(--tgo-bg-0);
+    color: var(--tgo-text);
+    border: 1px solid var(--tgo-line-soft);
+    border-radius: var(--tgo-radius);
+    padding: var(--tgo-space-1) var(--tgo-space-2);
+    font-family: var(--tgo-font-mono);
+}
+.the-glory-online.sheet input.tgo-name {
+    font-family: var(--tgo-font-display);
+    font-size: 1.375rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.the-glory-online.sheet input:focus-visible {
+    outline: 2px solid var(--tgo-accent);
+    outline-offset: 1px;
+    border-color: var(--tgo-accent);
+}
