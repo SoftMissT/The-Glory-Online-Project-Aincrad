@@ -2,6 +2,7 @@
     "TGO": {
         "Sheet": {
             "character": "Personagem",
+            "menu": "Menu do Sistema (SAO)",
             "name": "Nome",
             "level": "Nível",
             "class": "Classe",

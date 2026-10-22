@@ -17,6 +17,7 @@
 // Persistência: World Settings (partyMembers, partyLeader, quests)
 // ============================================================
 const { ApplicationV2, DialogV2 } = foundry.applications.api;
+const { ActorSheetV2 } = foundry.applications.sheets;
 const MENU_ID = 'sao-system-menu-ultimate';
 const STYLE_ID = 'sao-system-style-ultimate';
 // Namespace válido para os flags internos dos itens.
@@ -132,6 +133,7 @@ const SETTINGS = {
     partyMembers: 'partyMembers',
     partyLeader: 'partyLeader',
     quests: 'quests',
+    messages: 'messages',
 };
 
 function registerSettings() {
@@ -139,6 +141,7 @@ function registerSettings() {
         [SETTINGS.partyMembers, Array, []],
         [SETTINGS.partyLeader, String, ''],
         [SETTINGS.quests, Array, []],
+        [SETTINGS.messages, Array, []],
     ];
     for (const [key, type, def] of definitions) {
         try {
@@ -281,9 +284,17 @@ function buildRoot() {
               <img
                 class="sao-avatar"
                 src="${esc(actorImage())}"
-              >
+                data-avatar
+                title="Alterar imagem"
+                style="cursor:pointer"
+                >
 
-              <div class="sao-player-name">
+              <div
+                class="sao-player-name"
+                data-name
+                title="Alterar nome"
+                style="cursor:pointer"
+              >
                 ${esc(actorName())}
               </div>
 
@@ -396,14 +407,6 @@ function buildRoot() {
 
           <button
             class="sao-round-button"
-            data-main="map"
-            title="Map"
-          >
-            <i class="fas fa-globe-americas"></i>
-          </button>
-
-          <button
-            class="sao-round-button"
             data-main="skills"
             title="Skills"
           >
@@ -412,26 +415,10 @@ function buildRoot() {
 
           <button
             class="sao-round-button"
-            data-main="quests"
-            title="Quests"
-          >
-            <i class="fas fa-scroll"></i>
-          </button>
-
-          <button
-            class="sao-round-button"
             data-main="mail"
             title="Mail"
           >
             <i class="fas fa-envelope"></i>
-          </button>
-
-          <button
-            class="sao-round-button"
-            data-main="options"
-            title="Options"
-          >
-            <i class="fas fa-cog"></i>
           </button>
 
           <button
@@ -658,6 +645,7 @@ function injectStyle() {
   border:1px solid var(--sao-line);
   box-shadow:0 0 34px rgba(232,179,57,.16);
   transform:rotateX(65deg);
+  pointer-events:none;
 }
 
 #${MENU_ID} .sao-avatar{
@@ -666,9 +654,11 @@ function injectStyle() {
   max-height:180px;
   object-fit:contain;
   filter:drop-shadow(0 10px 10px rgba(0,0,0,.55));
+  cursor:pointer;
 }
 
 #${MENU_ID} .sao-player-name{
+  cursor:pointer;
   margin-top:8px;
   font-family:var(--sao-font-display);
   font-size:var(--sao-fs-xl);
@@ -2093,7 +2083,7 @@ function updateWorldInfo() {
 // PLAYER
 // ==========================================================
 function renderPlayer(tab = 'status') {
-    actor = getActor();
+    actor ??= getActor();
     const s = menuView(actor);
     const content = document.getElementById('sao-content');
     const abilities = [
@@ -2109,7 +2099,13 @@ function renderPlayer(tab = 'status') {
             const mod = a.mod ?? Math.floor((value - 10) / 2);
             return `
 
-            <div class="sao-ability">
+            <div
+              class="sao-ability"
+              data-ability="${key}"
+              data-ability-label="${label}"
+              title="Rolar ${label}"
+              style="cursor:pointer"
+            >
 
               <div class="sao-ability-name">
                 ${label}
@@ -2578,7 +2574,7 @@ function equippedForSlot(slot, items) {
 // EQUIPMENT SCREEN
 // ==========================================================
 function renderEquipment(filter = 'all') {
-    actor = getActor();
+    actor ??= getActor();
     const content = document.getElementById('sao-content');
     const items = actor.items.contents.filter(
         (i) => !['class', 'race', 'species', 'background'].includes(i.type)
@@ -2869,7 +2865,7 @@ function renderEquipment(filter = 'all') {
 // EQUIPMENT SLOT WINDOW
 // ==========================================================
 function openEquipSlot(slot) {
-    actor = getActor();
+    actor ??= getActor();
     const content = document.getElementById('sao-content');
     const names = {
         head: 'HEAD',
@@ -3713,7 +3709,7 @@ async function openPartyMember(actorId) {
 
     `;
     content.querySelector('[data-member-message]').onclick = () => {
-        if (user) renderMessages(user.id);
+        if (a) renderMessages(a.id);
     };
     content.querySelector('[data-member-select]').onclick = () => {
         const token = canvas.tokens.placeables.find((t) => t.actor?.id === a.id);
@@ -3762,223 +3758,144 @@ async function openPartyMember(actorId) {
 // ==========================================================
 let selectedMessageUser = null;
 
-function getMessageUsers() {
-    return game.users.contents.filter((user) => user.id !== game.user.id);
+function getMessageActors() {
+    return game.actors.contents.filter(
+        (candidate) => candidate.type === 'character' && candidate.id !== actor?.id
+    );
 }
 
-function getPrivateMessages(userId) {
-    return game.messages.contents
-        .filter((message) => {
-            const flags = message.flags?.[FLAG_SCOPE];
-            if (!flags) return false;
-            if (!flags.privateTarget) return false;
-            if (flags.privateTarget !== userId && flags.privateTarget !== game.user.id)
-                return false;
-            return flags.sender === userId || flags.sender === game.user.id;
-        })
-        .sort((a, b) => a.timestamp - b.timestamp);
+function getStoredMessages() {
+    try {
+        return game.settings.get(SETTINGS_NS, SETTINGS.messages) ?? [];
+    } catch {
+        return [];
+    }
 }
-async function sendPrivateMessage(target, text) {
-    if (!target || !text.trim()) return;
-    await ChatMessage.create({
-        content: `<div>${esc(text)}</div>`,
-        speaker: {
-            alias: game.user.name,
-        },
-        whisper: [target.id, game.user.id],
-        flags: {
-            [FLAG_SCOPE]: {
-                privateTarget: target.id,
-                sender: game.user.id,
-            },
-        },
+
+function getPrivateMessages(targetActorId) {
+    const me = actor?.id;
+    if (!me) return [];
+    return getStoredMessages()
+        .filter(
+            (message) =>
+                (message.from === me && message.to === targetActorId) ||
+                (message.from === targetActorId && message.to === me)
+        )
+        .sort((a, b) => a.time - b.time);
+}
+async function appendStoredMessage(message) {
+    if (getStoredMessages().some((existing) => existing.id === message.id)) return;
+    await game.settings.set(SETTINGS_NS, SETTINGS.messages, [...getStoredMessages(), message]);
+}
+async function sendPrivateMessage(targetActor, text) {
+    if (!targetActor || !text.trim() || !actor) return;
+    const message = {
+        id: foundry.utils.randomID(),
+        from: actor.id,
+        fromName: actor.name,
+        to: targetActor.id,
+        text: text.trim(),
+        time: Date.now(),
+    };
+    if (game.user.isGM) return appendStoredMessage(message);
+    game.socket.emit('system.the-glory-online', {
+        type: 'message',
+        message,
     });
 }
 
-function renderMessages(targetUserId = null) {
+function renderMessages(targetActorId = null) {
     const content = document.getElementById('sao-content');
-    const users = getMessageUsers();
-    if (targetUserId) {
-        selectedMessageUser = targetUserId;
-    }
-    const target = selectedMessageUser ? game.users.get(selectedMessageUser) : null;
+    if (!content) return;
+    if (targetActorId) selectedMessageUser = targetActorId;
+    const contacts = getMessageActors();
+    const target = selectedMessageUser ? game.actors.get(selectedMessageUser) : null;
     const messages = target ? getPrivateMessages(target.id) : [];
-    const contactsHTML = users
+    const contactsHTML = contacts
         .map(
-            (user) => `
-
-            <div
-              class="
-                sao-contact
-                ${target?.id === user.id ? 'active' : ''}
-              "
-              data-message-user="${user.id}"
-            >
-
-              ${
-                  user.character?.img
-                      ? `
-                    <img
-                      src="${esc(user.character.img)}"
-                    >
-                  `
-                      : ''
-              }
-
-              <div
-                class="sao-contact-name"
-              >
-                ${esc(user.name)}
+            (candidate) => `
+              <div class="sao-contact ${target?.id === candidate.id ? 'active' : ''}" data-message-user="${candidate.id}">
+                <img src="${esc(candidate.img)}">
+                <div class="sao-contact-name">${esc(candidate.name)}</div>
               </div>
-
-            </div>
-
-          `
+            `
         )
         .join('');
     const messagesHTML = messages.length
         ? messages
               .map((message) => {
-                  const mine = message.flags?.[FLAG_SCOPE]?.sender === game.user.id;
+                  const mine = message.from === actor?.id;
                   return `
-
-                  <div
-                    class="
-                      sao-chat-message
-                      ${mine ? 'mine' : ''}
-                    "
-                  >
-
-                    <div
-                      class="sao-chat-author"
-                    >
-                      ${esc(mine ? game.user.name : target?.name)}
+                    <div class="sao-chat-message ${mine ? 'mine' : ''}">
+                      <div class="sao-chat-author">${esc(mine ? message.fromName : target?.name ?? '')}</div>
+                      <div>${esc(message.text)}</div>
                     </div>
-
-                    ${message.content}
-
-                  </div>
-
-                `;
+                  `;
               })
               .join('')
-        : `
-
-          <div class="sao-empty">
-
-            ${target ? 'NO MESSAGES' : 'SELECT A PLAYER'}
-
-          </div>
-
-        `;
+        : `<div class="sao-empty">${target ? 'NO MESSAGES' : 'SELECT A CHARACTER'}</div>`;
     content.innerHTML = `
-
       <div class="sao-panel-header">
-
-        <div class="sao-panel-title">
-          MESSAGE
-        </div>
-
-        <div class="sao-panel-subtitle">
-          PRIVATE COMMUNICATION SYSTEM
-        </div>
-
+        <div class="sao-panel-title">MESSAGE</div>
+        <div class="sao-panel-subtitle">PRIVATE COMMUNICATION SYSTEM</div>
       </div>
-
-      <div
-        class="sao-panel-body"
-        style="padding:0"
-      >
-
+      <div class="sao-panel-body" style="padding:0">
         <div class="sao-message-layout">
-
-          <div
-            class="sao-contact-list"
-          >
-
-            ${contactsHTML}
-
-          </div>
-
+          <div class="sao-contact-list">${contactsHTML}</div>
           <div class="sao-chat">
-
-            <div class="sao-chat-header">
-
-              ${target ? `PRIVATE CHANNEL  ${esc(target.name)}` : 'PRIVATE CHANNEL'}
-
+            <div class="sao-chat-header">PRIVATE CHANNEL${target ? ` · ${esc(target.name)}` : ''}</div>
+            <div class="sao-chat-history" id="sao-chat-history">${messagesHTML}</div>
+            <div class="sao-chat-input">
+              <input id="sao-message-input" placeholder="${target ? 'Digite uma mensagem...' : 'Selecione um personagem...'}" ${target ? '' : 'disabled'}>
+              <button id="sao-send-message" class="sao-send" ${target ? '' : 'disabled'}>SEND</button>
             </div>
-
-            <div
-              id="sao-chat-history"
-              class="sao-chat-history"
-            >
-
-              ${messagesHTML}
-
-            </div>
-
-            <div
-              class="sao-chat-input"
-            >
-
-              <input
-                id="sao-message-input"
-                placeholder="${target ? 'Type message...' : 'Select a player...'}"
-                ${target ? '' : 'disabled'}
-              >
-
-              <button
-                id="sao-send-message"
-                class="sao-send"
-                ${target ? '' : 'disabled'}
-              >
-                SEND
-              </button>
-
-            </div>
-
           </div>
-
         </div>
-
       </div>
-
     `;
-    content.querySelectorAll('[data-message-user]').forEach((button) => {
-        button.onclick = () => renderMessages(button.dataset.messageUser);
+    content.querySelectorAll('[data-message-user]').forEach((element) => {
+        element.onclick = () => renderMessages(element.dataset.messageUser);
     });
     const input = document.getElementById('sao-message-input');
-    const send = document.getElementById('sao-send-message');
-    const sendMessage = async () => {
+    const send = async () => {
         if (!target || !input) return;
         const text = input.value.trim();
         if (!text) return;
-        await sendPrivateMessage(target, text);
         input.value = '';
+        await sendPrivateMessage(target, text);
         renderMessages(target.id);
     };
-    if (send) send.onclick = sendMessage;
+    document.getElementById('sao-send-message')?.addEventListener('click', send);
     if (input) {
         input.onkeydown = (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                sendMessage();
+                send();
             }
         };
     }
     const history = document.getElementById('sao-chat-history');
     if (history) history.scrollTop = history.scrollHeight;
+    if (target) markMessagesRead();
+    updateMessageBadge();
+}
+async function markMessagesRead() {
+    if (!actor) return;
+    try {
+        await game.user.update({ [`flags.${FLAG_SCOPE}.lastMessageRead.${actor.id}`]: Date.now() });
+    } catch {
+        // usuário sem permissão de escrita no próprio documento: badge só zera no próximo render
+    }
 }
 // ==========================================================
 // MESSAGE BADGE
 // ==========================================================
 function updateMessageBadge() {
-    const count = game.messages.contents.filter((message) => {
-        const flags = message.flags?.[FLAG_SCOPE];
-        if (!flags) return false;
-        if (flags.sender === game.user.id) return false;
-        return flags.privateTarget === game.user.id;
-    }).length;
+    if (!actor) return;
+    const lastRead = Number(game.user.flags?.[FLAG_SCOPE]?.lastMessageRead?.[actor.id] ?? 0);
+    const count = getStoredMessages().filter(
+        (message) => message.to === actor.id && message.time > lastRead
+    ).length;
     const badge = document.getElementById('sao-message-count');
     if (!badge) return;
     if (count > 0) {
@@ -3992,7 +3909,7 @@ function updateMessageBadge() {
 // SKILLS
 // ==========================================================
 function renderSkills() {
-    actor = getActor();
+    actor ??= getActor();
     const content = document.getElementById('sao-content');
     const skills = actor.items.contents.filter((i) => ['feat', 'spell', 'weapon'].includes(i.type));
     const html = skills.length
@@ -4435,7 +4352,7 @@ function renderMail() {
             ui.notifications.error('SAO MAIL | Área da Mail Box não encontrada.');
             return;
         }
-        const currentActor = getActor();
+        const currentActor = actor ?? getActor();
         if (!currentActor) {
             content.innerHTML = `
           <div class="sao-panel-header">
@@ -5214,7 +5131,7 @@ function renderOptions() {
 // ==========================================================
 // APPLICATION V2
 // ==========================================================
-class SAOSystemMenu extends ApplicationV2 {
+class SAOSystemMenu extends ActorSheetV2 {
     static DEFAULT_OPTIONS = {
         id: MENU_ID,
         classes: ['sao-menu-app'],
@@ -5240,12 +5157,46 @@ class SAOSystemMenu extends ApplicationV2 {
     // CICLO DE VIDA
     // ----------------------------------------
     async _renderHTML() {
+        actor = this.actor ?? getActor();
         return buildRoot();
     }
     _replaceHTML(result, content) {
         content.replaceChildren(result);
     }
+    async _pickImage() {
+        if (!actor?.isOwner) return;
+        new foundry.applications.apps.FilePicker.implementation({
+            type: 'image',
+            current: actor.img,
+            callback: (path) => actor.update({ img: path }),
+        }).browse();
+    }
+    async _editName() {
+        if (!actor?.isOwner) return;
+        const name = await foundry.applications.api.DialogV2.prompt({
+            window: { title: 'ALTERAR NOME' },
+            content: `<input type="text" name="name" value="${esc(actor.name)}" autofocus>`,
+            ok: {
+                label: 'SALVAR',
+                callback: (event, button) => button.form.elements.name.value.trim(),
+            },
+        });
+        if (name) await actor.update({ name });
+    }
+    async _rollAbility(key, label) {
+        if (!actor) return;
+        const value = Number(actor.system?.attributes?.[key]?.value ?? 0);
+        const mod = Math.floor((value - 10) / 2);
+        const roll = new Roll('1d20 + @mod', { mod });
+        await roll.evaluate();
+        // Dice So Nice anima o Roll do toMessage; showForRoll duplicaria a animação.
+        await roll.toMessage({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            flavor: `TESTE DE ${label}`,
+        });
+    }
     async _onRender() {
+        actor = this.actor ?? actor;
         injectStyle();
         const root = this.element;
         root.querySelectorAll('[data-close]').forEach((button) => {
@@ -5257,6 +5208,16 @@ class SAOSystemMenu extends ApplicationV2 {
                 button.classList.add('active');
                 this._mount(button.dataset.main);
             };
+        });
+        root.querySelectorAll('[data-avatar]').forEach((element) => {
+            element.onclick = () => this._pickImage();
+        });
+        root.querySelectorAll('[data-name]').forEach((element) => {
+            element.onclick = () => this._editName();
+        });
+        root.querySelectorAll('[data-ability]').forEach((element) => {
+            element.onclick = () =>
+                this._rollAbility(element.dataset.ability, element.dataset.abilityLabel);
         });
         root.querySelector(`[data-main="${this._section}"]`)?.classList.add('active');
         this._mount(this._section);
@@ -5295,7 +5256,8 @@ class SAOSystemMenu extends ApplicationV2 {
     _bindHooks() {
         this._unbindHooks();
         this._hooks = [
-            Hooks.on('createChatMessage', () => {
+            Hooks.on('updateSetting', (setting) => {
+                if (setting.key !== `${SETTINGS_NS}.${SETTINGS.messages}`) return;
                 updateMessageBadge();
                 if (this._section !== 'message') return;
                 if (!document.getElementById('sao-content')) return;
@@ -5327,19 +5289,14 @@ class SAOSystemMenu extends ApplicationV2 {
 // TOGGLE / LAUNCH
 // ==========================================================
 function openSystemMenu() {
-    actor = canvas.tokens.controlled[0]?.actor ?? game.user.character ?? null;
-    if (!actor) {
+    const target = getActor();
+    if (!target) {
         ui.notifications.warn(
             'SAO SYSTEM | Selecione um personagem ou defina seu Actor como personagem.'
         );
         return;
     }
-    if (game.saoSystemMenu?.rendered) {
-        game.saoSystemMenu.close();
-        return;
-    }
-    game.saoSystemMenu = new SAOSystemMenu();
-    game.saoSystemMenu.render({
+    return target.sheet.render({
         force: true,
     });
 }
@@ -5361,5 +5318,10 @@ Hooks.once('init', () => {
 Hooks.once('ready', () => {
     game.theGloryOnline ??= {};
     game.theGloryOnline.openMenu = openSystemMenu;
+    // mensagens entre fichas: o GM grava no world setting; jogadores só emitem
+    game.socket.on('system.the-glory-online', async (data) => {
+        if (data?.type !== 'message' || !game.user.isGM) return;
+        await appendStoredMessage(data.message);
+    });
 });
 export { SAOSystemMenu, openSystemMenu };

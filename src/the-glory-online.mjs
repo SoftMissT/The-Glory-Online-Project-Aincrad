@@ -1,7 +1,7 @@
 import { TGO } from './config.mjs';
 import { CharacterData } from './data/character.mjs';
 import { CharacterSheet } from './sheets/character-sheet.mjs';
-import './apps/system-menu.mjs';
+import { SAOSystemMenu } from './apps/system-menu.mjs';
 Hooks.once('init', () => {
     console.log('THE GLORY ONLINE | Carregando o sistema');
     CONFIG.TGO = TGO;
@@ -12,8 +12,18 @@ Hooks.once('init', () => {
         CharacterSheet,
         {
             types: ['character'],
-            makeDefault: true,
+            makeDefault: false,
             label: 'TGO.Sheet.character',
+        }
+    );
+    foundry.applications.apps.DocumentSheetConfig.registerSheet(
+        foundry.documents.Actor,
+        'the-glory-online',
+        SAOSystemMenu,
+        {
+            types: ['character'],
+            makeDefault: true,
+            label: 'TGO.Sheet.menu',
         }
     );
 });
