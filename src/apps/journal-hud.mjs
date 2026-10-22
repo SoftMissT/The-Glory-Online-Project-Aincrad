@@ -58,6 +58,7 @@ export class JournalHUD extends foundry.applications.api.ApplicationV2 {
     _suppressMapClick = false;
     _onResize = null;
     _onKeyDown = null;
+    _handleClick = null;
     _renderHTML() {
         return buildRoot(this._tab);
     }
@@ -66,7 +67,11 @@ export class JournalHUD extends foundry.applications.api.ApplicationV2 {
     }
     async _onRender() {
         injectStyle();
-        this.element.addEventListener('click', (event) => this._onClick(event));
+        if (!this._handleClick) {
+            this._handleClick = (event) => this._onClick(event);
+            this.element.addEventListener('click', this._handleClick);
+        }
+        if (this._onKeyDown) document.removeEventListener('keydown', this._onKeyDown);
         this._onKeyDown = (event) => this._handleKey(event);
         document.addEventListener('keydown', this._onKeyDown);
         await this._mount();
@@ -376,4 +381,12 @@ Hooks.on('init', () => {
     });
     game.theGloryOnline ??= {};
     game.theGloryOnline.openJournal = () => toggleJournal();
+});
+
+Hooks.on('ready', () => {
+    game.socket?.on('system.the-glory-online', (payload) => {
+        if (payload?.type !== 'hud-refresh' || !hud?.rendered) return;
+        hud._data = null;
+        hud.render({ force: true });
+    });
 });

@@ -49,7 +49,7 @@ export const HUD_CSS = `
     overflow: hidden;
     color: var(--tgo-hud-ink);
     font-family: var(--tgo-font-ui, 'Rajdhani', 'Bahnschrift', 'Segoe UI', sans-serif);
-    background: url('systems/the-glory-online/assets/cover-setup.webp') center / cover no-repeat;
+    background: url('systems/the-glory-online/assets/hud-bg.webp') center / cover no-repeat;
 }
 .tgo-hud::before {
     content: '';

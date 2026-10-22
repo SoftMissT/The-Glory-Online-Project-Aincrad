@@ -5331,4 +5331,4 @@ Hooks.once('ready', () => {
         await appendStoredMessage(data.message);
     });
 });
-export { SAOSystemMenu, openSystemMenu, getQuests };
+export { SAOSystemMenu, openSystemMenu, getQuests, SETTINGS, getWorldFlag, setWorldFlag };
