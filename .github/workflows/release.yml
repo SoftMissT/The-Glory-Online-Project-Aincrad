@@ -51,7 +51,7 @@ jobs:
         run: |
           mkdir -p dist/system
 
-          for directory in src styles templates lang; do
+          for directory in src styles templates lang assets; do
             test -d "$directory"
             cp -R "$directory" dist/system/
           done

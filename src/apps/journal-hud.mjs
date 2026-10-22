@@ -62,7 +62,7 @@ export class JournalHUD extends foundry.applications.api.ApplicationV2 {
         return buildRoot(this._tab);
     }
     _replaceHTML(result, content) {
-        content.replaceChildren(result);
+        content.innerHTML = result;
     }
     async _onRender() {
         injectStyle();

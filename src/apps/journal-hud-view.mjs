@@ -12,16 +12,6 @@ import {
     splitParagraphs,
     textSummary,
 } from './journal-hud-data.mjs';
-const ICONS = {
-    lore: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5V5.5z"/></svg>',
-    quests: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8"/><path d="M4 6v12a2 2 0 0 0 2 2h1"/><path d="M8 8h8M8 12h6"/></svg>',
-    events: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
-    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z"/><path d="M9 3v15M15 6v15"/></svg>',
-    npcs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 20a5 5 0 0 1 5.5-4.9"/></svg>',
-    system: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="1.5"/><rect x="9" y="9" width="6" height="6"/><path d="M9 5V3M15 5V3M9 21v-2M15 21v-2M5 9H3M5 15H3M21 9h-2M21 15h-2"/></svg>',
-    shortcuts:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M6 13h1M10 13h1M14 13h1M18 13h0M7 16h10"/></svg>',
-};
 const MAP_ICONS = {
     center: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
     layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5M3 18l9 5 9-5"/></svg>',
@@ -31,11 +21,15 @@ const MAP_ICONS = {
 };
 export const HUD_CSS = `
 .tgo-journal {
+    position: fixed !important;
+    z-index: 200 !important;
     inset: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     max-width: none !important;
     max-height: none !important;
+    background: #040a11 !important;
+    will-change: transform;
 }
 .tgo-journal .window-content { padding: 0 !important; overflow: hidden !important; }
 .tgo-hud {
@@ -55,83 +49,72 @@ export const HUD_CSS = `
     overflow: hidden;
     color: var(--tgo-hud-ink);
     font-family: var(--tgo-font-ui, 'Rajdhani', 'Bahnschrift', 'Segoe UI', sans-serif);
-    background: linear-gradient(180deg, #0e2034 0%, #17344d 48%, #173225 49%, #0a1712 100%);
+    background: url('systems/the-glory-online/assets/cover-setup.webp') center / cover no-repeat;
 }
 .tgo-hud::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: rgba(6, 14, 24, .55);
+    background:
+        linear-gradient(rgba(95, 216, 240, .035) 1px, transparent 1px) 0 0 / 100% 52px,
+        linear-gradient(90deg, rgba(95, 216, 240, .035) 1px, transparent 1px) 0 0 / 52px 100%,
+        radial-gradient(120% 70% at 50% 110%, rgba(95, 216, 240, .16), transparent 60%),
+        linear-gradient(180deg, rgba(3, 8, 14, .9) 0%, rgba(3, 8, 14, .55) 40%, rgba(3, 8, 14, .78) 100%);
     pointer-events: none;
 }
 .tgo-hud-nav, .tgo-hud-body { position: relative; z-index: 1; }
 .tgo-hud-nav {
     flex: 0 0 auto;
-    display: flex;
-    align-items: flex-start;
-    gap: 34px;
-    padding: 20px 110px 0 40px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 56px;
+    padding: 0;
     border-bottom: 2px solid rgba(95, 216, 240, .72);
+    background: rgba(4, 10, 17, .84);
 }
 .tgo-hud-tab {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 0 4px 22px;
+    padding: 22px 10px;
     border: 0;
     background: none;
     color: var(--tgo-hud-muted);
     font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    line-height: 1;
+    text-align: center;
     cursor: pointer;
+    transition: color .15s ease, background .15s ease;
 }
-.tgo-hud-disc {
-    display: grid;
-    place-items: center;
-    width: 60px;
-    height: 60px;
-    border: 1.5px solid rgba(95, 216, 240, .85);
-    border-radius: 50%;
+.tgo-hud-tab:hover { color: var(--tgo-hud-ink); background: rgba(95, 216, 240, .07); }
+.tgo-hud-tab.is-active {
     color: var(--tgo-hud-cyan);
-    background: rgba(6, 14, 24, .35);
-    transition: background .15s ease, box-shadow .15s ease, border-color .15s ease;
+    background: linear-gradient(0deg, rgba(95, 216, 240, .16), rgba(95, 216, 240, 0));
 }
-.tgo-hud-disc svg { width: 28px; height: 28px; }
-.tgo-hud-tablabel { font-size: 14px; font-weight: 600; letter-spacing: .16em; line-height: 1; }
-.tgo-hud-tab:hover .tgo-hud-disc { background: rgba(95, 216, 240, .14); }
-.tgo-hud-tab.is-active { color: var(--tgo-hud-cyan); }
-.tgo-hud-tab.is-active .tgo-hud-disc {
-    background: var(--tgo-hud-cyan);
-    color: #06202b;
-    box-shadow: 0 0 18px rgba(95, 216, 240, .55);
-}
-.tgo-hud-tab.is-active::after {
+.tgo-hud-tab.is-active::before {
     content: '';
     position: absolute;
-    left: 50%;
-    bottom: -2px;
-    transform: translateX(-50%);
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
-    border-top: 8px solid var(--tgo-hud-cyan);
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--tgo-hud-cyan);
+    box-shadow: 0 0 14px rgba(95, 216, 240, .75);
 }
 .tgo-hud-close {
-    position: absolute;
-    top: 24px;
-    right: 40px;
-    z-index: 4;
+    align-self: center;
+    justify-self: center;
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 34px;
+    height: 34px;
     border: 1px solid rgba(95, 216, 240, .72);
     border-radius: 8px;
     background: rgba(6, 14, 24, .72);
     color: var(--tgo-hud-cyan);
     font-family: var(--tgo-font-ui, 'Rajdhani', 'Bahnschrift', 'Segoe UI', sans-serif);
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 600;
     cursor: pointer;
 }
@@ -576,15 +559,13 @@ export const HUD_CSS = `
 }
 .tgo-hud :focus-visible { outline: 2px solid var(--tgo-hud-cyan); outline-offset: 2px; }
 @media (max-width: 1200px) {
-    .tgo-hud-nav { gap: 20px; }
-    .tgo-hud-tablabel { font-size: 12px; }
+    .tgo-hud-tab { font-size: 13px; letter-spacing: .12em; }
     .tgo-hud-list { flex-basis: 360px; }
     .tgo-hud-split { padding: 20px 24px 24px; }
     .tgo-hud-detail { padding: 24px; }
 }
 @media (max-width: 900px) {
-    .tgo-hud-nav { flex-wrap: wrap; padding-right: 80px; }
-    .tgo-hud-tab { padding-bottom: 14px; }
+    .tgo-hud-tab { padding: 16px 4px; font-size: 11px; letter-spacing: .06em; }
     .tgo-hud-split { flex-direction: column; overflow-y: auto; }
     .tgo-hud-list { flex: 0 0 auto; max-height: 42%; }
     .tgo-hud-detail { flex: 0 0 auto; overflow: visible; }
@@ -910,16 +891,11 @@ function renderMap(data, ui) {
 }
 export function buildRoot(activeTab) {
     const tabs = HUD_TABS.map(
-        (
-            tab
-        ) => `<button type="button" class="tgo-hud-tab${tab.id === activeTab ? ' is-active' : ''}" data-hud-tab="${tab.id}" role="tab" aria-selected="${tab.id === activeTab}" aria-label="${tab.label}">
-            <span class="tgo-hud-disc">${ICONS[tab.id] ?? ''}</span>
-            <span class="tgo-hud-tablabel">${tab.label}</span>
-        </button>`
+        (tab) =>
+            `<button type="button" class="tgo-hud-tab${tab.id === activeTab ? ' is-active' : ''}" data-hud-tab="${tab.id}" role="tab" aria-selected="${tab.id === activeTab}">${tab.label}</button>`
     ).join('');
     return `<div class="tgo-hud">
-        <nav class="tgo-hud-nav" role="tablist" aria-label="Diário do jogo">${tabs}</nav>
-        <button type="button" class="tgo-hud-close" data-hud-close aria-label="Fechar diário">X</button>
+        <nav class="tgo-hud-nav" role="tablist" aria-label="Diário do jogo">${tabs}<button type="button" class="tgo-hud-close" data-hud-close aria-label="Fechar diário">X</button></nav>
         <main class="tgo-hud-body" id="tgo-hud-body" role="tabpanel"></main>
     </div>`;
 }
