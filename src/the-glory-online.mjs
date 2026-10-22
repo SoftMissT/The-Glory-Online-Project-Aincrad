@@ -1,6 +1,7 @@
 import { TGO } from './config.mjs';
 import { CharacterData } from './data/character.mjs';
 import { CharacterSheet } from './sheets/character-sheet.mjs';
+import './apps/system-menu.mjs';
 Hooks.once('init', () => {
     console.log('THE GLORY ONLINE | Carregando o sistema');
     CONFIG.TGO = TGO;
