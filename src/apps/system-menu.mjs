@@ -134,6 +134,12 @@ const SETTINGS = {
     partyLeader: 'partyLeader',
     quests: 'quests',
     messages: 'messages',
+    story: 'story',
+    events: 'events',
+    npcs: 'npcs',
+    mapImage: 'mapImage',
+    mapPins: 'mapPins',
+    rules: 'rules',
 };
 
 function registerSettings() {
@@ -142,6 +148,12 @@ function registerSettings() {
         [SETTINGS.partyLeader, String, ''],
         [SETTINGS.quests, Array, []],
         [SETTINGS.messages, Array, []],
+        [SETTINGS.story, Array, []],
+        [SETTINGS.events, Array, []],
+        [SETTINGS.npcs, Array, []],
+        [SETTINGS.mapImage, String, ''],
+        [SETTINGS.mapPins, Array, []],
+        [SETTINGS.rules, Array, []],
     ];
     for (const [key, type, def] of definitions) {
         try {
@@ -440,13 +452,6 @@ function buildRoot() {
           </button>
 
         </div>
-
-        <button
-          class="sao-return"
-          data-close
-        >
-          ◀ RETURN TO GAME
-        </button>
 
       </div>
 
@@ -2014,31 +2019,6 @@ function injectStyle() {
   font-size:var(--sao-fs-2xs);
   font-weight:700;
   z-index:5;
-}
-
-#${MENU_ID} .sao-return{
-  position:absolute;
-  left:37%;
-  bottom:14px;
-  height:44px;
-  padding:0 26px;
-  border:1px solid var(--sao-line);
-  border-radius:3px;
-  background:rgba(10,14,22,.8);
-  color:var(--sao-ink-2);
-  cursor:pointer;
-  font-family:var(--sao-font-ui);
-  font-size:var(--sao-fs-sm);
-  font-weight:600;
-  letter-spacing:var(--sao-track);
-  transition:
-    background .15s var(--sao-ease),
-    color .15s var(--sao-ease);
-}
-
-#${MENU_ID} .sao-return:hover{
-  background:var(--sao-gold);
-  color:#0a0e16;
 }
 
 #${MENU_ID} .sao-empty{
@@ -3835,7 +3815,7 @@ function renderMessages(targetActorId = null) {
                   const mine = message.from === actor?.id;
                   return `
                     <div class="sao-chat-message ${mine ? 'mine' : ''}">
-                      <div class="sao-chat-author">${esc(mine ? message.fromName : target?.name ?? '')}</div>
+                      <div class="sao-chat-author">${esc(mine ? message.fromName : (target?.name ?? ''))}</div>
                       <div>${esc(message.text)}</div>
                     </div>
                   `;
@@ -3890,7 +3870,9 @@ function renderMessages(targetActorId = null) {
 async function markMessagesRead() {
     if (!actor) return;
     try {
-        await game.user.update({ [`flags.${FLAG_SCOPE}.lastMessageRead.${actor.id}`]: Date.now() });
+        await game.user.update({
+            [`flags.${FLAG_SCOPE}.lastMessageRead.${actor.id}`]: Date.now(),
+        });
     } catch {
         // usuário sem permissão de escrita no próprio documento: badge só zera no próximo render
     }
@@ -5176,30 +5158,42 @@ class SAOSystemMenu extends ActorSheetV2 {
         new foundry.applications.apps.FilePicker.implementation({
             type: 'image',
             current: actor.img,
-            callback: (path) => actor.update({ img: path }),
+            callback: (path) =>
+                actor.update({
+                    img: path,
+                }),
         }).browse();
     }
     async _editName() {
         if (!actor?.isOwner) return;
         const name = await foundry.applications.api.DialogV2.prompt({
-            window: { title: 'ALTERAR NOME' },
+            window: {
+                title: 'ALTERAR NOME',
+            },
             content: `<input type="text" name="name" value="${esc(actor.name)}" autofocus>`,
             ok: {
                 label: 'SALVAR',
                 callback: (event, button) => button.form.elements.name.value.trim(),
             },
         });
-        if (name) await actor.update({ name });
+        if (name)
+            await actor.update({
+                name,
+            });
     }
     async _rollAbility(key, label) {
         if (!actor) return;
         const value = Number(actor.system?.attributes?.[key]?.value ?? 0);
         const mod = Math.floor((value - 10) / 2);
-        const roll = new Roll('1d20 + @mod', { mod });
+        const roll = new Roll('1d20 + @mod', {
+            mod,
+        });
         await roll.evaluate();
         // Dice So Nice anima o Roll do toMessage; showForRoll duplicaria a animação.
         await roll.toMessage({
-            speaker: ChatMessage.getSpeaker({ actor }),
+            speaker: ChatMessage.getSpeaker({
+                actor,
+            }),
             flavor: `TESTE DE ${label}`,
         });
     }
@@ -5337,4 +5331,4 @@ Hooks.once('ready', () => {
         await appendStoredMessage(data.message);
     });
 });
-export { SAOSystemMenu, openSystemMenu };
+export { SAOSystemMenu, openSystemMenu, getQuests };

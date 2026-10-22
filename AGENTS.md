@@ -2,43 +2,58 @@
 
 Sistema standalone de Foundry VTT v14+ (id `the-glory-online`). A raiz do repositório É o pacote do sistema: a ficha nativa substitui a macro. Projeto de fãs, privado.
 
-**Estado:** base (F1) escrita manifesto, modelo do personagem e ficha STATUS (runtime ainda não validado). F2 (itens + INVENTORY/EQUIPMENT) começa só com pedido do Nelson. Mudanças pequenas e completas; feature nova só com pedido.
+**Estado:** F1 (manifesto, modelo do personagem) + ficha SAO do menu como padrão; v0.0.5 publicada. HUD do `J` em `src/apps/journal-hud-*.mjs`, coberto por testes estáticos; falta validação em runtime do Foundry. F2 (itens + INVENTORY/EQUIPMENT) começa só com pedido do Nelson. Mudanças pequenas e completas; feature nova só com pedido.
 
 ## Autoridade (leia antes de mexer)
 
 - **Número ou regra de jogo**: `SDD/Sistema/sao-sistema-v0.3.md` decisão nova entra com marcador `[Decidido]` e linha no Log. Número pendente não vira código nem valor default: fica `// ponytail:` com o teto.
 - **Estrutura, dados, fases**: `SDD/Sistema/sao-foundry-sistema-conceito-v0.1.md`.
-- **CSS, ficha, tokens**: `DESIGN.md` tokens sempre `--tgo-*`.
+- **CSS, ficha, tokens**: `SDD/DESIGN.md` (fonte local; tokens sempre `--tgo-*`).
 
 ## Convenções (as que o repo não conta sozinho)
 
 - Chaves de dados em inglês (`system.health.value`); todo rótulo visível em pt-BR via `lang/pt-BR.json`.
 - ESM + Handlebars direto, sem build: editar → F5 no Foundry. Só o que o `system.json` declara carrega no Foundry; `SDD/` e `.concepts/` são docs locais e ficam fora do git (protótipos congelados).
-- Commits só com pedido do Nelson trabalhe na working tree.
+- Commits só com pedido do Nelson; trabalhe na working tree.
 - `id` e caminhos `systems/the-glory-online/...` mudam juntos, junto com o junction de teste.
+
+## Processo para feature nova
+
+1. **Planejar antes de codar (GSD)**: spec em `SDD/` com escopo, dados e riscos; tarefa de 3+ etapas segue Spec → Plan → Execute → Verify. Nada de runtime antes do plano.
+2. **Design primeiro**: usar `power-design` e `artemis` para a direção visual. Quando o Nelson disser que vai passar o design, **esperar** — não implementar nem testar.
+3. **Teste automatizado antes do teste manual**: toda mudança de comportamento cria/atualiza teste; todo bug ganha teste de regressão que falha sem a correção. A feature só vai ao Foundry depois que `npm test` cobrir o que for testável.
+4. **Loop Protocol**: escrever → verificar → corrigir → repetir, no máximo 5x. Mesmo erro 2x seguidas: parar, achar a causa raiz; não afrouxar teste nem silenciar erro.
+5. **Versionamento com evidência**: antes de dizer que está pronto, conferir `git status`, branch e commit. Sem evidência do repo, não declarar versionamento concluído.
 
 ## Validar (não há Foundry aqui)
 
 1. `node --check` nos `.mjs`; `JSON.parse` em `system.json` e `lang/pt-BR.json`.
-2. Diga o que rodou e o que **não** rodou runtime Foundry é "não testado" até o Nelson testar; entregue roteiro de teste.
-3. Teste real: junction em `Data/systems/the-glory-online` (comando no `README.md`).
+2. `npm test`: registrar quantos passaram e o que **não** é coberto.
+3. Diga o que rodou e o que **não** rodou. Runtime Foundry é "não testado" até o Nelson testar; entregue roteiro curto de teste.
+4. Teste real: junction em `Data/systems/the-glory-online` (comando no `README.md`).
 
 ## Skills
 
 - Foundry (macros, módulos, sistema, API v14): `tang-rou`.
 - Ficha, interface, CSS: `power-design`.
+- Direção de arte e prompts visuais: `artemis`.
+- Abrir/fechar sessão e catalogar skills: `hive-sessao`.
 
 ## Hive (fora do repo)
 
 - Vault: `D:\fluctlight-vault\Hive\`
+- Boot: `system/HIVE.md` → `BRAIN.md` → `system/Global_Rules.md` → `000-index.md` → `Memory/shared/STATUS.md` → STATE do projeto.
 - Memória de trabalho: `Hive\Memory\shared\L0_working_memory.md` bloco de retomada no fim do arquivo (append, sem duplicar a abertura do dia).
 - Wiki do projeto: `Hive\wiki\projects\The Glory Online Project Aincrad\`
 - Ala da TANG-ROU: `Hive\Memory\wings\tang-rou\`
 - Conversas em envelope: `Hive\Memory\conversations\` ler, não mexer.
+- Fechar sessão: `hive-sessao` grava L0, STATE, `000-log`, `000-index` e diário da wing. O vault não é commitado sem pedido.
 
 ## Ferramentas
 
 - **GitNexus** (licença PolyForm Noncommercial uso pessoal): repositório indexado em 17/10/2026; índice local em `.gitnexus/`. Depois de mudar código: `gitnexus analyze --index-only`. Análise pelas ferramentas MCP (`impact`, `context`, `query`, `detect_changes`).
+  - Antes de editar símbolo: `impact` (upstream), reportar o raio de impacto e avisar se HIGH/CRITICAL.
+  - Antes de commitar: `detect_changes()`; renomear só com `rename`.
 - **ai-memory**: projeto registrado (workspace `default`, projeto `softmisst-the-glory-online-project-aincrad`). Consultar o panorama e os handoffs antes de mudanças grandes.
 
 <!-- ai-memory:start -->

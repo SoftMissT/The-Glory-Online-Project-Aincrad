@@ -2,8 +2,8 @@
     "id": "the-glory-online",
     "type": "system",
     "title": "The Glory Online",
-    "description": "Sistema de RPG da torre de Aincrad: atributos prÃ³prios, Vida, Mana, Maestria por arma e Sword Skills.",
-    "version": "0.0.4",
+    "description": "Sistema de RPG da torre de Aincrad: atributos próprios, Vida, Mana, Maestria por arma e Sword Skills.",
+    "version": "0.0.5",
     "compatibility": {
         "minimum": "14",
         "verified": "14"
@@ -23,7 +23,7 @@
     "languages": [
         {
             "lang": "pt-BR",
-            "name": "PortuguÃªs (Brasil)",
+            "name": "Português (Brasil)",
             "path": "lang/pt-BR.json"
         }
     ],
@@ -43,4 +43,3 @@
     "manifest": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad/releases/latest/download/system.json",
     "download": "https://github.com/SoftMissT/The-Glory-Online-Project-Aincrad/releases/latest/download/system.zip"
 }
-

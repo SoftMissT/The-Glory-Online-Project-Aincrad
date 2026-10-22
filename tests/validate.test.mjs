@@ -23,6 +23,9 @@ test('módulos ESM passam no node --check', () => {
         'config.mjs',
         'data/character.mjs',
         'sheets/character-sheet.mjs',
+        'apps/journal-hud.mjs',
+        'apps/journal-hud-data.mjs',
+        'apps/journal-hud-view.mjs',
     ];
     for (const file of files) {
         execFileSync(process.execPath, ['--check', `${root}src/${file}`]);

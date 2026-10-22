@@ -4,7 +4,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Foundry_VTT-v14%2B-ff6400?style=for-the-badge" alt="Foundry VTT v14+">
-  <img src="https://img.shields.io/badge/Vers%C3%A3o-0.0.1-e11c4b?style=for-the-badge" alt="Versão 0.0.1">
+  <img src="https://img.shields.io/badge/Vers%C3%A3o-0.0.5-e11c4b?style=for-the-badge" alt="Versão 0.0.5">
   <img src="https://img.shields.io/badge/Licen%C3%A7a-CC0_1.0-8fd3ff?style=for-the-badge" alt="Licença CC0 1.0">
   <img src="https://img.shields.io/badge/Status-Em_desenvolvimento-orange?style=for-the-badge" alt="Em desenvolvimento">
 </p>
