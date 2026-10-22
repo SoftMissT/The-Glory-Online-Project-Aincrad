@@ -1,6 +1,6 @@
 {
   "name": "the-glory-online",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "private": true,
   "engines": {
@@ -10,3 +10,4 @@
     "test": "node --test tests/*.test.mjs"
   }
 }
+

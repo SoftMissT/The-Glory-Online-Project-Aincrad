@@ -382,6 +382,14 @@ function buildRoot() {
 
           <button
             class="sao-round-button"
+            data-main="inventory"
+            title="Inventory"
+          >
+            <i class="fas fa-bag-shopping"></i>
+          </button>
+
+          <button
+            class="sao-round-button"
             data-main="party"
             title="Party"
           >
@@ -5215,10 +5223,14 @@ class SAOSystemMenu extends ActorSheetV2 {
         root.querySelectorAll('[data-name]').forEach((element) => {
             element.onclick = () => this._editName();
         });
-        root.querySelectorAll('[data-ability]').forEach((element) => {
-            element.onclick = () =>
-                this._rollAbility(element.dataset.ability, element.dataset.abilityLabel);
-        });
+        if (!this._abilityBound) {
+            this._abilityBound = true;
+            root.addEventListener('click', (event) => {
+                const element = event.target.closest?.('[data-ability]');
+                if (element)
+                    this._rollAbility(element.dataset.ability, element.dataset.abilityLabel);
+            });
+        }
         root.querySelector(`[data-main="${this._section}"]`)?.classList.add('active');
         this._mount(this._section);
         updateWorldInfo();
@@ -5234,6 +5246,7 @@ class SAOSystemMenu extends ActorSheetV2 {
     // ----------------------------------------
     _mount(section) {
         this._section = section;
+        if (section === 'inventory') return renderPlayer('inventory');
         if (section === 'party') return renderParty();
         if (section === 'message') return renderMessages();
         if (section === 'map') return renderMap();

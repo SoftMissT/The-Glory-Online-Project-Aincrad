@@ -1,4 +1,9 @@
 {
+    "TYPES": {
+        "Actor": {
+            "character": "Personagem"
+        }
+    },
     "TGO": {
         "Sheet": {
             "character": "Personagem",
