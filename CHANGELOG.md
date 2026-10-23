@@ -3,6 +3,20 @@
 Todas as mudanças notáveis do sistema **The Glory Online: Project Aincrad**.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.0.9] - 2026-10-23
+
+### Alterado
+
+- Painel **PLAYER SYSTEM** com cards de HP e Mana e barras coloridas por faixa (verde/âmbar/vermelho para HP; ciano para Mana).
+- Barras do menu expostas como `progressbar` acessível (`role` + `aria-valuemin/max/now`), no padrão da ficha nativa.
+- Cards reutilizam `poolPercent`/`healthTone` de `src/sheets/character-sheet-data.mjs`, sem duplicar lógica de percentual/tom.
+- Cores das barras usam tokens da paleta (`--sao-ok`, `--sao-gold`, `--sao-danger`, `--sao-mana`), sem hex hardcoded.
+- `canEditActor` segue o modelo de permissões do Foundry (`canUserModify`) em vez de apenas GM/owner.
+
+### Corrigido
+
+- Stat HP antigo renderizava os mesmos inputs `system.health.value/max` junto ao card novo; `savePlayerEdits` aplicava last-wins e as edições feitas no card eram descartadas. O stat duplicado foi removido.
+
 ## [0.0.8] - 2026-10-23
 
 ### Corrigido

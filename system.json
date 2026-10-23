@@ -3,7 +3,7 @@
     "type": "system",
     "title": "The Glory Online",
     "description": "Sistema de RPG da torre de Aincrad: atributos próprios, Vida, Mana, Maestria por arma e Sword Skills.",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "compatibility": {
         "minimum": "13.350",
         "verified": "14.367",

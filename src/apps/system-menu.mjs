@@ -17,6 +17,7 @@
 // Persistência: World Settings (partyMembers, partyLeader, quests)
 // ============================================================
 import { TGO } from '../config.mjs';
+import { healthTone, poolPercent } from '../sheets/character-sheet-data.mjs';
 const { ApplicationV2, DialogV2 } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const MENU_ID = 'sao-system-menu-ultimate';
@@ -42,7 +43,8 @@ const esc = (value) => {
     return div.innerHTML;
 };
 const getActor = () => canvas.tokens.controlled[0]?.actor ?? game.user.character ?? actor;
-const canEditActor = (a = actor) => Boolean(game.user?.isGM || a?.isOwner);
+const canEditActor = (a = actor, action = 'update') =>
+    Boolean(a && (game.user?.isGM || a.canUserModify?.(game.user, action) || a.isOwner));
 const sys = () => getActor()?.system ?? {};
 const modifier = (value) => {
     const n = Number(value ?? 0);
@@ -518,6 +520,7 @@ function injectStyle() {
   --sao-ink-3:rgba(233,238,246,.44);
   --sao-danger:#d1524a;
   --sao-ok:#4bd68a;
+  --sao-mana:#42d9e8;
   --sao-fs-2xs:10px;
   --sao-fs-xs:11px;
   --sao-fs-sm:12px;
@@ -1130,6 +1133,54 @@ function injectStyle() {
   font-family:var(--sao-font-ui);
   font-size:inherit;
 }
+
+#${MENU_ID} .sao-resource-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:18px;
+}
+
+#${MENU_ID} .sao-resource{
+  padding:10px;
+  border:1px solid var(--sao-line-soft);
+  border-radius:var(--sao-radius);
+  background:var(--sao-surface);
+}
+
+#${MENU_ID} .sao-resource-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:6px;
+  color:var(--sao-ink-2);
+  font-size:var(--sao-fs-xs);
+  letter-spacing:var(--sao-track);
+}
+
+#${MENU_ID} .sao-resource-values{
+  color:var(--sao-ink);
+  font-family:var(--sao-font-display);
+  font-size:var(--sao-fs-md);
+}
+
+#${MENU_ID} .sao-resource-bar{
+  height:8px;
+  overflow:hidden;
+  border:1px solid var(--sao-line-soft);
+  border-radius:4px;
+  background:rgba(0,0,0,.45);
+}
+
+#${MENU_ID} .sao-resource-fill{
+  height:100%;
+  transition:width .16s var(--sao-ease);
+}
+
+#${MENU_ID} .sao-resource-fill.hp-safe{background:var(--sao-ok);}
+#${MENU_ID} .sao-resource-fill.hp-warning{background:var(--sao-gold);}
+#${MENU_ID} .sao-resource-fill.hp-critical{background:var(--sao-danger);}
+#${MENU_ID} .sao-resource-fill.mana{background:var(--sao-mana);}
 
 #${MENU_ID} .sao-item-delete{
   margin-left:8px;
@@ -2138,7 +2189,6 @@ function updateWorldInfo() {
 // ==========================================================
 const castEdit = (value, type) =>
     type === 'text' ? value.trim() : Number.isFinite(Number(value)) ? Number(value) : 0;
-
 const escAttr = (value) => foundry.utils.escapeHTML(String(value ?? ''));
 
 function editInput(path, value, type = 'number') {
@@ -2202,16 +2252,27 @@ async function deleteActorItem(itemId) {
     renderPlayer('inventory');
 }
 const ITEM_DEFAULTS = {
-    weapon: { name: 'Nova arma', img: 'icons/svg/sword.svg' },
-    equipment: { name: 'Novo equipamento', img: 'icons/svg/chest.svg' },
-    consumable: { name: 'Novo consumível', img: 'icons/svg/potion.svg' },
+    weapon: {
+        name: 'Nova arma',
+        img: 'icons/svg/sword.svg',
+    },
+    equipment: {
+        name: 'Novo equipamento',
+        img: 'icons/svg/chest.svg',
+    },
+    consumable: {
+        name: 'Novo consumível',
+        img: 'icons/svg/potion.svg',
+    },
 };
 async function createActorItem() {
     const target = actor ?? getActor();
     if (!canEditActor(target))
         return ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
     const type = await DialogV2.prompt({
-        window: { title: 'NOVO ITEM' },
+        window: {
+            title: 'NOVO ITEM',
+        },
         content: `
             <select name="type" style="width:100%">
                 ${Object.entries(TGO.itemTypes)
@@ -2311,26 +2372,51 @@ function renderPlayer(tab = 'status') {
             `
             )
             .join('');
+        const health = s.health ?? {
+            value: 0,
+            max: 0,
+        };
+        const mana = s.mana ?? {
+            value: 0,
+            max: 0,
+        };
+        const healthPercent = poolPercent(health);
+        const manaPercent = poolPercent(mana);
         body = `
 
-        <div class="sao-stat-grid">
+        <div class="sao-resource-grid">
 
-          <div class="sao-stat">
-
-            <div class="sao-stat-label">
-              HP
-            </div>
-
-            <div class="sao-stat-value">
-              ${editable ? editInput('system.health.value', s.attributes?.hp?.value ?? 0, 'pool') : (s.attributes?.hp?.value ?? 0)}
-
-              <small>
+          <div class="sao-resource">
+            <div class="sao-resource-head">
+              <span>HP</span>
+              <span class="sao-resource-values">
+                ${editable ? editInput('system.health.value', health.value, 'pool') : health.value}
                 /
-                ${editable ? editInput('system.health.max', s.attributes?.hp?.max ?? 0, 'pool') : (s.attributes?.hp?.max ?? 0)}
-              </small>
+                ${editable ? editInput('system.health.max', health.max, 'pool') : health.max}
+              </span>
             </div>
-
+            <div class="sao-resource-bar" role="progressbar" aria-label="HP" aria-valuemin="0" aria-valuemax="${health.max}" aria-valuenow="${health.value}">
+              <div class="sao-resource-fill hp-${healthTone(healthPercent)}" style="width:${healthPercent}%"></div>
+            </div>
           </div>
+
+          <div class="sao-resource">
+            <div class="sao-resource-head">
+              <span>MANA</span>
+              <span class="sao-resource-values">
+                ${editable ? editInput('system.mana.value', mana.value, 'pool') : mana.value}
+                /
+                ${editable ? editInput('system.mana.max', mana.max, 'pool') : mana.max}
+              </span>
+            </div>
+            <div class="sao-resource-bar" role="progressbar" aria-label="Mana" aria-valuemin="0" aria-valuemax="${mana.max}" aria-valuenow="${mana.value}">
+              <div class="sao-resource-fill mana" style="width:${manaPercent}%"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="sao-stat-grid">
 
           <div class="sao-stat">
 
@@ -3116,9 +3202,11 @@ function openEquipSlot(slot) {
                                 other.system?.equipped &&
                                 other.system?.slot === slot
                         )
-                        .map((other) => ({ _id: other.id, 'system.equipped': false }));
-                    if (conflict.length)
-                        await item.actor.updateEmbeddedDocuments('Item', conflict);
+                        .map((other) => ({
+                            _id: other.id,
+                            'system.equipped': false,
+                        }));
+                    if (conflict.length) await item.actor.updateEmbeddedDocuments('Item', conflict);
                     await item.update({
                         'system.equipped': true,
                         'system.slot': slot,
@@ -3357,7 +3445,10 @@ function openItem(item, returnFunction) {
                                     other.system?.equipped &&
                                     other.system?.slot === item.system.slot
                             )
-                            .map((other) => ({ _id: other.id, 'system.equipped': false }));
+                            .map((other) => ({
+                                _id: other.id,
+                                'system.equipped': false,
+                            }));
                         if (conflict.length)
                             await item.actor.updateEmbeddedDocuments('Item', conflict);
                         await item.update({
@@ -5316,7 +5407,10 @@ class SAOSystemMenu extends ActorSheetV2 {
         content.replaceChildren(result);
     }
     async _pickImage() {
-        if (!actor?.isOwner) return;
+        if (!canEditActor(actor)) {
+            ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
+            return;
+        }
         new foundry.applications.apps.FilePicker.implementation({
             type: 'image',
             current: actor.img,
@@ -5327,7 +5421,10 @@ class SAOSystemMenu extends ActorSheetV2 {
         }).browse();
     }
     async _editName() {
-        if (!actor?.isOwner) return;
+        if (!canEditActor(actor)) {
+            ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
+            return;
+        }
         const name = await foundry.applications.api.DialogV2.prompt({
             window: {
                 title: 'ALTERAR NOME',
@@ -5387,9 +5484,7 @@ class SAOSystemMenu extends ActorSheetV2 {
                     rerenderPlayer();
                     return;
                 }
-                savePlayerEdits(root, this.actor ?? getActor()).then(() =>
-                    syncEditButtons(root)
-                );
+                savePlayerEdits(root, this.actor ?? getActor()).then(() => syncEditButtons(root));
             };
         });
         root.querySelectorAll('[data-edit-cancel]').forEach((button) => {
