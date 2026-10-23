@@ -44,6 +44,13 @@ jobs:
           if (manifest.id !== "the-glory-online") {
             throw new Error("Invalid system ID");
           }
+
+          const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+          if (!changelog.includes(`## [${manifest.version}]`)) {
+            throw new Error(
+              `CHANGELOG.md sem entrada para a versão ${manifest.version}`
+            );
+          }
           NODE
 
       - name: Build release package
@@ -56,7 +63,7 @@ jobs:
             cp -R "$directory" dist/system/
           done
 
-          cp LICENSE README.md dist/system/
+          cp LICENSE README.md CHANGELOG.md dist/system/
 
           node --input-type=module <<'NODE'
           import fs from "node:fs";

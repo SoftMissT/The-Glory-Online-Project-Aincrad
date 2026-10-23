@@ -18,6 +18,8 @@
     --tgo-accent: #00f3ff;
     --tgo-accent-dim: rgba(0, 243, 255, 0.12);
     --tgo-gold: #ffd700;
+    --tgo-hp-safe: #31d17c;
+    --tgo-hp-warning: #f6c945;
     --tgo-danger: #ff2b4a;
     --tgo-rare: #b026ff;
     /* tipografia */
@@ -86,14 +88,56 @@
 }
 .tgo-pool {
     display: grid;
-    gap: var(--tgo-space-1);
+    gap: var(--tgo-space-2);
 }
-.tgo-bar {
+.tgo-pool-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--tgo-space-2);
+}
+.tgo-pool-total {
+    color: var(--tgo-text);
+    font-family: var(--tgo-font-mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+.tgo-meter {
+    position: relative;
+    width: 100%;
+    height: 0.875rem;
+    overflow: hidden;
+    border: 1px solid var(--tgo-line-soft);
+    border-radius: var(--tgo-radius);
+    background: rgba(0, 0, 0, 0.42);
+}
+.tgo-meter-fill {
+    display: block;
+    width: var(--tgo-meter-fill);
+    height: 100%;
+    background: var(--tgo-accent);
+    transition:
+        width 160ms ease,
+        background-color 160ms ease;
+}
+.tgo-meter-health.is-safe .tgo-meter-fill {
+    background: var(--tgo-hp-safe);
+}
+.tgo-meter-health.is-warning .tgo-meter-fill {
+    background: var(--tgo-hp-warning);
+}
+.tgo-meter-health.is-critical .tgo-meter-fill {
+    background: var(--tgo-danger);
+}
+.tgo-meter-mana .tgo-meter-fill {
+    background: var(--tgo-accent);
+}
+.tgo-pool-values {
     display: flex;
     align-items: baseline;
     gap: var(--tgo-space-1);
 }
-.tgo-bar input {
+.tgo-pool-values input {
     width: 4.5rem;
 }
 .tgo-sep {
@@ -113,6 +157,11 @@
     font-size: 1.75rem;
     line-height: 1;
     color: var(--tgo-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+    .tgo-meter-fill {
+        transition: none;
+    }
 }
 .tgo-attributes {
     display: grid;
@@ -188,4 +237,53 @@
     outline: 2px solid var(--tgo-accent);
     outline-offset: 1px;
     border-color: var(--tgo-accent);
+}
+/* ═══ Ficha de Item (F2 parcial) ═══ */
+.the-glory-online.sheet.item .window-content {
+    background: linear-gradient(170deg, var(--tgo-bg-0) 0%, var(--tgo-bg-1) 100%);
+    color: var(--tgo-text);
+    font-family: var(--tgo-font-ui);
+    padding: 0;
+}
+.tgo-item-sheet {
+    display: grid;
+    gap: var(--tgo-space-3);
+    padding: var(--tgo-space-4);
+}
+.tgo-item-header {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    gap: var(--tgo-space-3);
+    align-items: center;
+}
+.tgo-item-img {
+    width: 4rem;
+    height: 4rem;
+    object-fit: cover;
+    border: 1px solid var(--tgo-line);
+    border-radius: var(--tgo-radius);
+    cursor: pointer;
+}
+.tgo-item-check {
+    display: flex;
+    gap: var(--tgo-space-1);
+    align-items: center;
+}
+.tgo-item-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--tgo-space-3);
+}
+.the-glory-online.sheet.item select,
+.the-glory-online.sheet.item textarea {
+    background: var(--tgo-bg-0);
+    color: var(--tgo-text);
+    border: 1px solid var(--tgo-line-soft);
+    border-radius: var(--tgo-radius);
+    padding: var(--tgo-space-1) var(--tgo-space-2);
+    font-family: var(--tgo-font-mono);
+}
+.the-glory-online.sheet.item textarea {
+    min-height: 8rem;
+    resize: vertical;
 }

@@ -1,6 +1,6 @@
 import { esc } from './journal-hud-data.mjs';
+import { HUD_ASSETS } from './journal-hud-view.mjs';
 import { GM_TABS, clampNumber, displayName, schemaFor, subtitleFor } from './gm-hud-data.mjs';
-
 export const GM_CSS = `
 .tgo-gm .tgo-hud-nav {
     grid-template-columns: repeat(var(--tgo-gm-tabs, 6), minmax(0, 1fr)) 56px;
@@ -175,6 +175,28 @@ export const GM_CSS = `
     height: 100%;
     object-fit: cover;
 }
+.tgo-gm-npcpreview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    grid-column: 1 / -1;
+    padding: 10px;
+    border: 1px solid rgba(95, 216, 240, 0.18);
+    background: rgba(4, 10, 17, 0.52);
+}
+.tgo-gm-npcpreview img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border: 1px solid rgba(240, 192, 80, 0.55);
+    border-radius: 2px;
+}
+.tgo-gm-npcpreview span {
+    font-family: var(--tgo-font-mono, 'Share Tech Mono', monospace);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--tgo-hud-dim);
+}
 .tgo-gm-mappreview .tgo-gm-empty {
     position: absolute;
     inset: 0;
@@ -219,7 +241,7 @@ export function buildGmRoot(tab) {
     }).join('');
     return `
         <div class="tgo-hud tgo-gm" style="--tgo-gm-tabs:${GM_TABS.length}">
-            <header class="tgo-hud-nav">${tabs}<button type="button" class="tgo-hud-close" data-gm-close aria-label="Fechar">×</button></header>
+            <header class="tgo-hud-nav"><div class="tgo-hud-brand"><img src="${HUD_ASSETS.crest}" alt=""><span>AINCRAD</span></div>${tabs}<button type="button" class="tgo-hud-close" data-gm-close aria-label="Fechar">×</button></header>
             <div class="tgo-hud-body" id="tgo-gm-body"></div>
         </div>`;
 }
@@ -243,6 +265,7 @@ export function renderGmPage(tab, { records = [], draft = null, mapImage = '' } 
             </section>
         </div>`;
 }
+
 function rowMarkup(tab, record, active) {
     const subtitle = subtitleFor(tab, record);
     return `<button type="button" class="tgo-hud-card tgo-gm-row${active ? ' is-active' : ''}" data-gm-select="${esc(record.id)}">
@@ -250,13 +273,21 @@ function rowMarkup(tab, record, active) {
         ${subtitle ? `<span class="tgo-gm-rowsub">${esc(subtitle)}</span>` : ''}
     </button>`;
 }
+
 function editorMarkup(tab, draft, inList, mapImage, rows) {
     const record = draft ?? {};
-    const fields = schemaFor(tab).map((field) => fieldMarkup(field, record[field.key])).join('');
+    const fields = schemaFor(tab)
+        .map((field) => fieldMarkup(field, record[field.key]))
+        .join('');
     const mapBox = tab === 'map' ? mapBoxMarkup(mapImage, rows) : '';
+    const npcPreview =
+        tab === 'npcs'
+            ? `<div class="tgo-gm-npcpreview"><img src="${esc(record.img || HUD_ASSETS.npcPlaceholder)}" alt=""><span>PRÉVIA DO NPC · placeholder visual do mundo</span></div>`
+            : '';
     return `
         <form class="tgo-gm-form" data-gm-form="${tab}">
             ${mapBox}
+            ${npcPreview}
             ${fields}
             <div class="tgo-gm-actions">
                 <button type="button" class="tgo-gm-btn is-primary" data-gm-save>SALVAR</button>
@@ -265,21 +296,26 @@ function editorMarkup(tab, draft, inList, mapImage, rows) {
             </div>
         </form>`;
 }
+
 function mapBoxMarkup(mapImage, rows) {
-    const pins = rows.map((pin) => {
-        const x = clampNumber(pin.x, 0, 100, 50);
-        const y = clampNumber(pin.y, 0, 100, 50);
-        return `<span class="tgo-gm-mappin" style="left:${x}%;top:${y}%" title="${esc(displayName(pin))}"></span>`;
-    }).join('');
+    const pins = rows
+        .map((pin) => {
+            const x = clampNumber(pin.x, 0, 100, 50);
+            const y = clampNumber(pin.y, 0, 100, 50);
+            return `<span class="tgo-gm-mappin" style="left:${x}%;top:${y}%" title="${esc(displayName(pin))}"></span>`;
+        })
+        .join('');
+    const previewImage = String(mapImage ?? '').trim() || HUD_ASSETS.mapFloorOne;
     return `
         <div class="tgo-gm-mapbox">
-            <label class="tgo-gm-field is-wide"><span>IMAGEM DO MAPA</span><input type="text" name="mapImage" value="${esc(mapImage)}" placeholder="systems/the-glory-online/assets/mapa.webp"></label>
+            <label class="tgo-gm-field is-wide"><span>IMAGEM DO MAPA</span><input type="text" name="mapImage" value="${esc(mapImage)}" placeholder="${HUD_ASSETS.mapFloorOne}"></label>
             <div class="tgo-gm-mappreview" data-gm-mapclick title="Clique para posicionar o pin selecionado">
-                ${mapImage ? `<img src="${esc(mapImage)}" alt="">` : '<span class="tgo-gm-empty">Defina a imagem para posicionar pins.</span>'}
+                <img src="${esc(previewImage)}" alt="Mapa do primeiro andar de Aincrad">
                 ${pins}
             </div>
         </div>`;
 }
+
 function fieldMarkup(field, value) {
     const label = `${field.label}${field.required ? ' *' : ''}`;
     const id = `tgo-gm-field-${field.key}`;
@@ -292,10 +328,12 @@ function fieldMarkup(field, value) {
         return `<label class="tgo-gm-field" for="${id}"><span>${esc(label)}</span><input id="${id}" name="${field.key}" type="number" step="1"${min}${max} value="${esc(value ?? '')}"></label>`;
     }
     if (field.type === 'select') {
-        const options = (field.options ?? []).map(([option, text]) => {
-            const selected = option === value ? ' selected' : '';
-            return `<option value="${esc(option)}"${selected}>${esc(text)}</option>`;
-        }).join('');
+        const options = (field.options ?? [])
+            .map(([option, text]) => {
+                const selected = option === value ? ' selected' : '';
+                return `<option value="${esc(option)}"${selected}>${esc(text)}</option>`;
+            })
+            .join('');
         return `<label class="tgo-gm-field" for="${id}"><span>${esc(label)}</span><select id="${id}" name="${field.key}">${options}</select></label>`;
     }
     if (field.type === 'checkbox') {

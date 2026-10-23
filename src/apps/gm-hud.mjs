@@ -10,13 +10,11 @@ import {
     normalizeRecord,
     removeRecord,
     upsertRecord,
-    validateRecord
+    validateRecord,
 } from './gm-hud-data.mjs';
 import { SETTINGS, getWorldFlag, setWorldFlag } from './system-menu.mjs';
-
 const HUD_STYLE_ID = 'tgo-journal-style';
 const GM_STYLE_ID = 'tgo-gm-style';
-
 let gmHud = null;
 
 function ensureStyle(id, css) {
@@ -26,14 +24,16 @@ function ensureStyle(id, css) {
     style.textContent = css;
     document.head.appendChild(style);
 }
-
 export class GmHUD extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {
         id: 'tgo-gm-hud',
         classes: ['tgo-journal', 'tgo-gm'],
-        window: { frame: false, positioned: false, resizable: false }
+        window: {
+            frame: false,
+            positioned: false,
+            resizable: false,
+        },
     };
-
     _tab = 'story';
     _data = null;
     _draft = null;
@@ -41,17 +41,14 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
     _boundClick = null;
     _boundSubmit = null;
     _onKeyDown = null;
-
     _renderHTML() {
         ensureStyle(HUD_STYLE_ID, HUD_CSS);
         ensureStyle(GM_STYLE_ID, GM_CSS);
         return buildGmRoot(this._tab);
     }
-
     _replaceHTML(result, content) {
         content.innerHTML = result;
     }
-
     async _onRender() {
         if (!game.user?.isGM) {
             this.close();
@@ -79,7 +76,6 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
         if (!this._data) await this._load();
         await this._mount();
     }
-
     async _load() {
         const read = async (key, fallback) => {
             try {
@@ -94,12 +90,11 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
             events: normalizeList('events', await read('events', [])),
             map: normalizeList('map', await read('mapPins', [])),
             npcs: normalizeList('npcs', await read('npcs', [])),
-            rules: normalizeList('rules', await read('rules', []))
+            rules: normalizeList('rules', await read('rules', [])),
         };
         this._mapImage = String((await read('mapImage', '')) ?? '');
         this._draft = this._data[this._tab]?.[0] ?? blankRecord(this._tab);
     }
-
     async _mount() {
         if (!this._data) return;
         if (!this._draft) this._draft = this._data[this._tab]?.[0] ?? blankRecord(this._tab);
@@ -108,18 +103,20 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
             body.innerHTML = renderGmPage(this._tab, {
                 records: this._data[this._tab] ?? [],
                 draft: this._draft,
-                mapImage: this._mapImage
+                mapImage: this._mapImage,
             });
         }
         this.element?.querySelectorAll('[data-gm-tab]').forEach((button) => {
             button.classList.toggle('is-active', button.dataset.gmTab === this._tab);
         });
     }
-
     _onClick(event) {
-        const target = event.target instanceof Element
-            ? event.target.closest('[data-gm-tab],[data-gm-close],[data-gm-select],[data-gm-new],[data-gm-save],[data-gm-delete]')
-            : null;
+        const target =
+            event.target instanceof Element
+                ? event.target.closest(
+                      '[data-gm-tab],[data-gm-close],[data-gm-select],[data-gm-new],[data-gm-save],[data-gm-delete]'
+                  )
+                : null;
         if (target) {
             if ('gmClose' in target.dataset) {
                 this.close();
@@ -146,29 +143,28 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
                 return;
             }
         }
-        const preview = event.target instanceof Element ? event.target.closest('[data-gm-mapclick]') : null;
+        const preview =
+            event.target instanceof Element ? event.target.closest('[data-gm-mapclick]') : null;
         if (preview && this._tab === 'map') this._placePin(event, preview);
     }
-
     _selectTab(id) {
         if (!GM_TABS.some((entry) => entry.id === id)) return;
         this._tab = id;
         this._draft = this._data?.[id]?.[0] ?? blankRecord(id);
         this._mount();
     }
-
     _selectRecord(id) {
         const record = (this._data?.[this._tab] ?? []).find((entry) => entry.id === id);
         if (!record) return;
-        this._draft = { ...record };
+        this._draft = {
+            ...record,
+        };
         this._mount();
     }
-
     _newRecord() {
         this._draft = blankRecord(this._tab);
         this._mount();
     }
-
     async _save() {
         if (!game.user?.isGM) return;
         const form = this.element?.querySelector('[data-gm-form]');
@@ -179,7 +175,10 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
             mapImage = String(payload.mapImage ?? '').trim();
             delete payload.mapImage;
         }
-        const record = normalizeRecord(this._tab, { ...payload, id: this._draft?.id });
+        const record = normalizeRecord(this._tab, {
+            ...payload,
+            id: this._draft?.id,
+        });
         const errors = validateRecord(this._tab, record);
         if (errors.length) {
             ui.notifications.warn(`Preencha: ${errors.map((entry) => entry.label).join(', ')}`);
@@ -201,7 +200,6 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
         ui.notifications.info('Salvo.');
         this._notifyPlayers();
     }
-
     async _delete() {
         if (!game.user?.isGM) return;
         const record = this._draft;
@@ -224,12 +222,15 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
         ui.notifications.info('Excluído.');
         this._notifyPlayers();
     }
-
     _placePin(event, preview) {
         const rect = preview.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
-        const x = Math.round(clampNumber(((event.clientX - rect.left) / rect.width) * 100, 0, 100, 50));
-        const y = Math.round(clampNumber(((event.clientY - rect.top) / rect.height) * 100, 0, 100, 50));
+        const x = Math.round(
+            clampNumber(((event.clientX - rect.left) / rect.width) * 100, 0, 100, 50)
+        );
+        const y = Math.round(
+            clampNumber(((event.clientY - rect.top) / rect.height) * 100, 0, 100, 50)
+        );
         const inputX = this.element?.querySelector('[data-gm-form] input[name="x"]');
         const inputY = this.element?.querySelector('[data-gm-form] input[name="y"]');
         if (inputX) inputX.value = String(x);
@@ -243,18 +244,17 @@ export class GmHUD extends foundry.applications.api.ApplicationV2 {
         marker.style.left = `${x}%`;
         marker.style.top = `${y}%`;
     }
-
     _notifyPlayers() {
-        game.socket?.emit('system.the-glory-online', { type: 'hud-refresh' });
+        game.socket?.emit('system.the-glory-online', {
+            type: 'hud-refresh',
+        });
     }
-
     _onClose() {
         if (this._onKeyDown) document.removeEventListener('keydown', this._onKeyDown);
         this._onKeyDown = null;
         gmHud = null;
     }
 }
-
 export function toggleGmHud() {
     if (!game.user?.isGM) {
         ui.notifications.warn('Somente o mestre pode abrir o HUD do Mestre.');
@@ -265,18 +265,23 @@ export function toggleGmHud() {
         return;
     }
     gmHud = new GmHUD();
-    gmHud.render({ force: true });
+    gmHud.render({
+        force: true,
+    });
 }
-
 Hooks.once('init', () => {
     game.keybindings.register('the-glory-online', 'openGmHud', {
         name: 'Abrir HUD do Mestre',
         hint: 'Autoria de história, quests, eventos, mapa, NPCs e regras.',
-        editable: [{ key: 'KeyG' }],
+        editable: [
+            {
+                key: 'KeyG',
+            },
+        ],
         onDown: () => {
             toggleGmHud();
             return true;
-        }
+        },
     });
     game.theGloryOnline ??= {};
     game.theGloryOnline.openGmHud = () => toggleGmHud();

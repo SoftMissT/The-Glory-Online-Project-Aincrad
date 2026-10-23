@@ -1,4 +1,5 @@
 import { TGO } from '../config.mjs';
+import { healthTone, poolPercent } from './character-sheet-data.mjs';
 const { ActorSheetV2 } = foundry.applications.sheets;
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 /** Ficha nativa do personagem. F1: cabeçalho + STATUS; abas entram com a segunda aba. */
@@ -24,6 +25,9 @@ export class CharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         context.system = this.document.system;
+        context.healthPercent = poolPercent(context.system.health);
+        context.healthTone = healthTone(context.healthPercent);
+        context.manaPercent = poolPercent(context.system.mana);
         context.attributes = Object.entries(TGO.attributes).map(([key, label]) => ({
             key,
             label,

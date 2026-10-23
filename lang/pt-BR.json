@@ -1,13 +1,13 @@
 {
     "TYPES": {
-        "Actor": {
-            "character": "Personagem"
-        }
+        "Actor": { "character": "Personagem" },
+        "Item": { "weapon": "Arma", "equipment": "Equipamento", "consumable": "Consumível" }
     },
     "TGO": {
         "Sheet": {
             "character": "Personagem",
             "menu": "Menu do Sistema (SAO)",
+            "item": "Item",
             "name": "Nome",
             "level": "Nível",
             "class": "Classe",
@@ -19,11 +19,31 @@
             "masteries": "Maestrias",
             "noMasteries": "Sem maestrias registradas."
         },
-        "Attribute": {
-            "str": "Força",
-            "agi": "Agilidade",
-            "vit": "Vitalidade",
-            "mind": "Mente"
+        "Attribute": { "str": "Força", "agi": "Agilidade", "vit": "Vitalidade", "mind": "Mente" },
+        "Item": {
+            "type": { "weapon": "Arma", "equipment": "Equipamento", "consumable": "Consumível" },
+            "name": "Nome",
+            "description": "Descrição",
+            "quantity": "Quantidade",
+            "equipped": "Equipado",
+            "equipHint": "Defina o slot antes de equipar.",
+            "hands": "Mãos",
+            "handsOne": "Uma mão",
+            "handsTwo": "Duas mãos",
+            "hand": "Mão",
+            "handNone": "Nenhuma",
+            "handLeft": "Esquerda",
+            "handRight": "Direita",
+            "slot": "Slot",
+            "slotNone": "Nenhum",
+            "armor": "Bônus de CA"
+        },
+        "EquipmentSlot": {
+            "head": "Cabeça",
+            "armor": "Armadura",
+            "feet": "Pés",
+            "acc1": "Acessório 1",
+            "acc2": "Acessório 2"
         }
     }
 }

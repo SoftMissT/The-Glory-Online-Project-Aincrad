@@ -1,13 +1,5 @@
-const STATE_LABELS = {
-    active: 'ATIVA',
-    new: 'NOVA',
-    done: 'CONCLUÍDA',
-};
-const TYPE_LABELS = {
-    local: 'LOCAL',
-    exploration: 'EXPLORAÇÃO',
-    pin: 'PIN',
-};
+const STATE_LABELS = { active: 'ATIVA', new: 'NOVA', done: 'CONCLUÍDA' };
+const TYPE_LABELS = { local: 'LOCAL', exploration: 'EXPLORAÇÃO', pin: 'PIN' };
 const MAP_TYPES = [
     ['local', 'LOCAL'],
     ['exploration', 'EXPLORAÇÃO'],
@@ -32,7 +24,13 @@ const SCHEMAS = {
         { key: 'objective', label: 'OBJETIVO', type: 'text' },
         { key: 'reward', label: 'RECOMPENSA', type: 'text' },
         { key: 'progress', label: 'PROGRESSO (%)', type: 'number', min: 0, max: 100, fallback: 0 },
-        { key: 'state', label: 'ESTADO', type: 'select', options: QUEST_STATES, fallback: 'active' },
+        {
+            key: 'state',
+            label: 'ESTADO',
+            type: 'select',
+            options: QUEST_STATES,
+            fallback: 'active',
+        },
     ],
     events: [
         { key: 'title', label: 'TÍTULO', type: 'text', required: true },
@@ -93,7 +91,8 @@ export function blankRecord(tab) {
     for (const field of schemaFor(tab)) {
         if (field.type === 'number') record[field.key] = field.fallback ?? 0;
         else if (field.type === 'checkbox') record[field.key] = Boolean(field.fallback);
-        else if (field.type === 'select') record[field.key] = field.fallback ?? field.options?.[0]?.[0] ?? '';
+        else if (field.type === 'select')
+            record[field.key] = field.fallback ?? field.options?.[0]?.[0] ?? '';
         else record[field.key] = '';
     }
     return record;
@@ -103,11 +102,20 @@ export function normalizeRecord(tab, raw) {
     const record = { ...source, id: source.id ? String(source.id) : newId() };
     for (const field of schemaFor(tab)) {
         const value = source[field.key];
-        if (field.type === 'number') record[field.key] = clampNumber(value, field.min, field.max, field.fallback ?? 0);
-        else if (field.type === 'checkbox') record[field.key] = value === true || value === 'on' || value === 'true' || value === 1 || value === '1';
+        if (field.type === 'number')
+            record[field.key] = clampNumber(value, field.min, field.max, field.fallback ?? 0);
+        else if (field.type === 'checkbox')
+            record[field.key] =
+                value === true ||
+                value === 'on' ||
+                value === 'true' ||
+                value === 1 ||
+                value === '1';
         else if (field.type === 'select') {
             const options = field.options ?? [];
-            record[field.key] = options.some(([option]) => option === value) ? value : field.fallback ?? options[0]?.[0] ?? '';
+            record[field.key] = options.some(([option]) => option === value)
+                ? value
+                : (field.fallback ?? options[0]?.[0] ?? '');
         } else record[field.key] = String(value ?? '').trim();
     }
     if (tab === 'npcs' && !record.name && source.title) record.name = String(source.title).trim();
@@ -115,7 +123,9 @@ export function normalizeRecord(tab, raw) {
 }
 export function normalizeList(tab, value) {
     return Array.isArray(value)
-        ? value.filter((entry) => entry && typeof entry === 'object').map((entry) => normalizeRecord(tab, entry))
+        ? value
+              .filter((entry) => entry && typeof entry === 'object')
+              .map((entry) => normalizeRecord(tab, entry))
         : [];
 }
 export function upsertRecord(list, record) {
@@ -133,7 +143,8 @@ export function validateRecord(tab, record) {
     const errors = [];
     for (const field of schemaFor(tab)) {
         if (!field.required) continue;
-        if (String(record?.[field.key] ?? '').trim() === '') errors.push({ key: field.key, label: field.label });
+        if (String(record?.[field.key] ?? '').trim() === '')
+            errors.push({ key: field.key, label: field.label });
     }
     return errors;
 }
@@ -144,10 +155,15 @@ export function displayName(record) {
 export function subtitleFor(tab, record) {
     const item = record ?? {};
     if (tab === 'story') return [item.category, item.date].filter(Boolean).join(' · ');
-    if (tab === 'quests') return [STATE_LABELS[item.state] ?? 'ATIVA', `${clampNumber(item.progress, 0, 100, 0)}%`].join(' · ');
+    if (tab === 'quests')
+        return [
+            STATE_LABELS[item.state] ?? 'ATIVA',
+            `${clampNumber(item.progress, 0, 100, 0)}%`,
+        ].join(' · ');
     if (tab === 'events') return [item.status, item.date, item.place].filter(Boolean).join(' · ');
     if (tab === 'npcs') return [item.role, item.status].filter(Boolean).join(' · ');
     if (tab === 'rules') return String(item.summary ?? '').trim();
-    if (tab === 'map') return [TYPE_LABELS[item.type] ?? 'LOCAL', item.status].filter(Boolean).join(' · ');
+    if (tab === 'map')
+        return [TYPE_LABELS[item.type] ?? 'LOCAL', item.status].filter(Boolean).join(' · ');
     return '';
 }

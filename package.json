@@ -1,13 +1,12 @@
 {
-  "name": "the-glory-online",
-  "version": "0.0.5",
-  "type": "module",
-  "private": true,
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "test": "node --test tests/*.test.mjs"
-  }
+    "name": "the-glory-online",
+    "version": "0.0.7",
+    "type": "module",
+    "private": true,
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "test": "node --test tests/*.test.mjs"
+    }
 }
-

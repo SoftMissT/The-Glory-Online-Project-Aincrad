@@ -1,8 +1,22 @@
 <div class='tgo-status'>
     <section class='tgo-bars'>
         <div class='tgo-pool'>
-            <span class='tgo-k'>{{localize 'TGO.Sheet.health'}}</span>
-            <div class='tgo-bar'>
+            <div class='tgo-pool-head'>
+                <span class='tgo-k'>{{localize 'TGO.Sheet.health'}}</span>
+                <output class='tgo-pool-total'>{{system.health.value}} / {{system.health.max}}</output>
+            </div>
+            <div
+                class='tgo-meter tgo-meter-health is-{{healthTone}}'
+                role='progressbar'
+                aria-label='{{localize "TGO.Sheet.health"}}'
+                aria-valuemin='0'
+                aria-valuemax='{{system.health.max}}'
+                aria-valuenow='{{system.health.value}}'
+                style='--tgo-meter-fill: {{healthPercent}}%;'
+            >
+                <span class='tgo-meter-fill'></span>
+            </div>
+            <div class='tgo-pool-values'>
                 <input
                     type='number'
                     name='system.health.value'
@@ -21,8 +35,22 @@
             </div>
         </div>
         <div class='tgo-pool'>
-            <span class='tgo-k'>{{localize 'TGO.Sheet.mana'}}</span>
-            <div class='tgo-bar'>
+            <div class='tgo-pool-head'>
+                <span class='tgo-k'>{{localize 'TGO.Sheet.mana'}}</span>
+                <output class='tgo-pool-total'>{{system.mana.value}} / {{system.mana.max}}</output>
+            </div>
+            <div
+                class='tgo-meter tgo-meter-mana'
+                role='progressbar'
+                aria-label='{{localize "TGO.Sheet.mana"}}'
+                aria-valuemin='0'
+                aria-valuemax='{{system.mana.max}}'
+                aria-valuenow='{{system.mana.value}}'
+                style='--tgo-meter-fill: {{manaPercent}}%;'
+            >
+                <span class='tgo-meter-fill'></span>
+            </div>
+            <div class='tgo-pool-values'>
                 <input
                     type='number'
                     name='system.mana.value'

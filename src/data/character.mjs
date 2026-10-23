@@ -57,6 +57,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
                     initial: '',
                 }),
             }),
+            details: new fields.SchemaField({
+                alignment: new fields.StringField({
+                    blank: true,
+                    initial: '',
+                }),
+            }),
             /** Maestria por tipo de arma/estilo (SDD v0.3, seções 7 e 8). */
             masteries: new fields.ArrayField(
                 new fields.SchemaField({

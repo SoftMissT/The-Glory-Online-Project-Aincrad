@@ -7,4 +7,18 @@ export const TGO = {
         vit: 'TGO.Attribute.vit',
         mind: 'TGO.Attribute.mind',
     },
+    /** Tipos de Item da F2 parcial. */
+    itemTypes: {
+        weapon: 'TGO.Item.type.weapon',
+        equipment: 'TGO.Item.type.equipment',
+        consumable: 'TGO.Item.type.consumable',
+    },
+    /** Slots de equipamento; a arma usa system.hand. */
+    equipmentSlots: {
+        head: 'TGO.EquipmentSlot.head',
+        armor: 'TGO.EquipmentSlot.armor',
+        feet: 'TGO.EquipmentSlot.feet',
+        acc1: 'TGO.EquipmentSlot.acc1',
+        acc2: 'TGO.EquipmentSlot.acc2',
+    },
 };

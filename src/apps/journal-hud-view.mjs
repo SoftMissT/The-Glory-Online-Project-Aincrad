@@ -12,6 +12,20 @@ import {
     splitParagraphs,
     textSummary,
 } from './journal-hud-data.mjs';
+export const HUD_ASSETS = Object.freeze({
+    crest: 'systems/the-glory-online/assets/crest-mark.webp',
+    hudBackground: 'systems/the-glory-online/assets/hud-bg.webp',
+    mapFloorOne: 'systems/the-glory-online/assets/map-floor-1.webp',
+    npcPlaceholder: 'systems/the-glory-online/assets/npc-placeholder.webp',
+    items: Object.freeze([
+        ['ARMADURA', 'systems/the-glory-online/assets/item-armadura.webp'],
+        ['CHAVE', 'systems/the-glory-online/assets/item-chave.webp'],
+        ['CRISTAL', 'systems/the-glory-online/assets/item-cristal.webp'],
+        ['ESPADA', 'systems/the-glory-online/assets/item-espada.webp'],
+        ['PERGAMINHO', 'systems/the-glory-online/assets/item-pergaminho.webp'],
+        ['POÇÃO', 'systems/the-glory-online/assets/item-pocao.webp'],
+    ]),
+});
 const MAP_ICONS = {
     center: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
     layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5M3 18l9 5 9-5"/></svg>',
@@ -49,7 +63,7 @@ export const HUD_CSS = `
     overflow: hidden;
     color: var(--tgo-hud-ink);
     font-family: var(--tgo-font-ui, 'Rajdhani', 'Bahnschrift', 'Segoe UI', sans-serif);
-    background: url('systems/the-glory-online/assets/hud-bg.webp') center / cover no-repeat;
+    background: url('${HUD_ASSETS.hudBackground}') center / cover no-repeat;
 }
 .tgo-hud::before {
     content: '';
@@ -60,18 +74,35 @@ export const HUD_CSS = `
         linear-gradient(rgba(95, 216, 240, .035) 1px, transparent 1px) 0 0 / 100% 52px,
         linear-gradient(90deg, rgba(95, 216, 240, .035) 1px, transparent 1px) 0 0 / 52px 100%,
         radial-gradient(120% 70% at 50% 110%, rgba(95, 216, 240, .16), transparent 60%),
-        linear-gradient(180deg, rgba(3, 8, 14, .9) 0%, rgba(3, 8, 14, .55) 40%, rgba(3, 8, 14, .78) 100%);
+        linear-gradient(90deg, rgba(3, 8, 14, .96) 0%, rgba(3, 8, 14, .72) 38%, rgba(3, 8, 14, .28) 72%, rgba(3, 8, 14, .5) 100%);
     pointer-events: none;
 }
 .tgo-hud-nav, .tgo-hud-body { position: relative; z-index: 1; }
 .tgo-hud-nav {
+    position: relative;
     flex: 0 0 auto;
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr)) 56px;
-    padding: 0;
+    padding: 0 0 0 92px;
     border-bottom: 2px solid rgba(95, 216, 240, .72);
     background: rgba(4, 10, 17, .84);
 }
+.tgo-hud-brand {
+    position: absolute;
+    z-index: 2;
+    left: 16px;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transform: translateY(-50%);
+    color: var(--tgo-hud-gold);
+    font-family: var(--tgo-font-mono, 'Share Tech Mono', monospace);
+    font-size: 10px;
+    letter-spacing: .12em;
+    pointer-events: none;
+}
+.tgo-hud-brand img { width: 42px; height: 42px; object-fit: contain; }
 .tgo-hud-tab {
     position: relative;
     padding: 22px 10px;
@@ -286,6 +317,17 @@ export const HUD_CSS = `
     font-size: 12px;
     color: var(--tgo-hud-muted);
 }
+.tgo-hud-reward img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+.tgo-hud-reward.is-art {
+    min-width: 112px;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--tgo-hud-gold);
+}
 .tgo-hud-detailfoot { margin-top: auto; padding-top: 8px; }
 .tgo-hud-cta {
     width: 220px;
@@ -327,8 +369,21 @@ export const HUD_CSS = `
     height: 96px;
     object-fit: cover;
     border: 1px solid rgba(95, 216, 240, .45);
-    border-radius: 8px;
+    border-radius: 2px;
     background: rgba(0, 0, 0, .35);
+}
+.tgo-hud-mapbadge {
+    position: absolute;
+    z-index: 4;
+    left: 24px;
+    bottom: 18px;
+    padding: 6px 9px;
+    border-left: 2px solid var(--tgo-hud-gold);
+    background: rgba(4, 10, 17, .78);
+    color: var(--tgo-hud-gold);
+    font-family: var(--tgo-font-mono, 'Share Tech Mono', monospace);
+    font-size: 11px;
+    letter-spacing: .12em;
 }
 .tgo-hud-npc h2 { margin: 8px 0 0; font-size: 32px; line-height: 1.05; color: #EAF6FA; }
 .tgo-hud-list, .tgo-hud-detail, .tgo-hud-mappanel, .tgo-hud-shortcuts {
@@ -565,6 +620,8 @@ export const HUD_CSS = `
     .tgo-hud-detail { padding: 24px; }
 }
 @media (max-width: 900px) {
+    .tgo-hud-nav { padding-left: 0; }
+    .tgo-hud-brand { display: none; }
     .tgo-hud-tab { padding: 16px 4px; font-size: 11px; letter-spacing: .06em; }
     .tgo-hud-split { flex-direction: column; overflow-y: auto; }
     .tgo-hud-list { flex: 0 0 auto; max-height: 42%; }
@@ -623,6 +680,20 @@ function section(title, body) {
 
 function detailHead(label, tone, title) {
     return `<div class="tgo-hud-detailhead">${pill(label, tone)}<h2>${esc(title)}</h2></div>`;
+}
+
+function rewardAsset(reward) {
+    const value = String(reward ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    return HUD_ASSETS.items.find(([label]) => {
+        const key = label
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+        return value.includes(key);
+    });
 }
 
 function splitPage(list, detail) {
@@ -691,8 +762,9 @@ function renderQuests(value, selected) {
     const objective = quest.objective
         ? `<div class="tgo-hud-objective"><span class="tgo-hud-check${state.id === 'done' ? ' is-done' : ''}">${state.id === 'done' ? '[x]' : '[ ]'}</span><span>${esc(quest.objective)}</span></div>`
         : bodyText('');
+    const rewardArt = quest.reward ? rewardAsset(quest.reward) : null;
     const reward = quest.reward
-        ? `<div class="tgo-hud-rewards"><span class="tgo-hud-reward">${esc(quest.reward)}</span></div>`
+        ? `<div class="tgo-hud-rewards"><span class="tgo-hud-reward${rewardArt ? ' is-art' : ''}">${rewardArt ? `<img src="${rewardArt[1]}" alt="${esc(rewardArt[0])}" loading="lazy">` : ''}<span>${esc(quest.reward)}</span></span></div>`
         : '';
     const detail = `${detailHead(state.label, tone, quest.title ?? 'Sem título')}
         <div class="tgo-hud-progressrow"><span>PROGRESSO</span>${progressBar(progress)}<strong>${progress}%</strong></div>
@@ -761,8 +833,8 @@ function renderNpcs(value, selected) {
             })
         )
         .join('');
-    const image = item.img ?? item.image ?? 'icons/svg/mystery-man.svg';
-    const detail = `<div class="tgo-hud-npc"><img src="${esc(image)}" alt="">${detailHead(role, 'cyan', name)}</div>
+    const image = item.img ?? item.image ?? HUD_ASSETS.npcPlaceholder;
+    const detail = `<div class="tgo-hud-npc"><img src="${esc(image)}" alt="${esc(name)}" loading="lazy">${detailHead(role, 'cyan', name)}</div>
         ${section('REGISTRO', bodyText(item.note ?? item.text))}`;
     return splitPage(list, detail);
 }
@@ -846,7 +918,8 @@ function mapRow(pin, position, isActive) {
 
 function renderMap(data, ui) {
     const pins = normalizePins(data.pins);
-    const image = String(data.mapImage ?? '').trim();
+    const configuredImage = String(data.mapImage ?? '').trim();
+    const image = configuredImage || HUD_ASSETS.mapFloorOne;
     const map = ui.map;
     const visible = pins.filter((pin) => pin.type === map.type);
     const markers = map.favoritesOnly ? visible.filter((pin) => pin.favorite) : visible;
@@ -884,6 +957,7 @@ function renderMap(data, ui) {
     </aside>`;
     return `<div class="tgo-hud-map${map.labels ? ' is-labels' : ''}">
         <div class="tgo-hud-mapview" data-map-view>${view}</div>
+        ${configuredImage ? '' : '<span class="tgo-hud-mapbadge">AINCRAD · PRIMEIRO ANDAR</span>'}
         <div class="tgo-hud-maptabs" role="tablist">${tabs}</div>
         ${controls}
         ${panel}
@@ -895,7 +969,7 @@ export function buildRoot(activeTab) {
             `<button type="button" class="tgo-hud-tab${tab.id === activeTab ? ' is-active' : ''}" data-hud-tab="${tab.id}" role="tab" aria-selected="${tab.id === activeTab}">${tab.label}</button>`
     ).join('');
     return `<div class="tgo-hud">
-        <nav class="tgo-hud-nav" role="tablist" aria-label="Diário do jogo">${tabs}<button type="button" class="tgo-hud-close" data-hud-close aria-label="Fechar diário">X</button></nav>
+        <nav class="tgo-hud-nav" role="tablist" aria-label="Diário do jogo"><div class="tgo-hud-brand"><img src="${HUD_ASSETS.crest}" alt=""><span>AINCRAD</span></div>${tabs}<button type="button" class="tgo-hud-close" data-hud-close aria-label="Fechar diário">X</button></nav>
         <main class="tgo-hud-body" id="tgo-hud-body" role="tabpanel"></main>
     </div>`;
 }

@@ -16,21 +16,23 @@
 //
 // Persistência: World Settings (partyMembers, partyLeader, quests)
 // ============================================================
+import { TGO } from '../config.mjs';
 const { ApplicationV2, DialogV2 } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const MENU_ID = 'sao-system-menu-ultimate';
 const STYLE_ID = 'sao-system-style-ultimate';
 // Namespace válido para os flags internos dos itens.
 const FLAG_SCOPE = 'sao';
-// Flag utilizada somente para saber a mão da arma.
-const HAND_FLAG = 'hand';
 // Namespace das configurações persistentes do mundo.
 const SETTINGS_NS = 'sao-system-menu';
 // ==========================================================
 // ACTOR
 // ==========================================================
 // Preenchido em openSystemMenu(); no load do módulo ainda não há canvas/game.user.
+// shortcut: o menu usa id fixo e estado de módulo (uma instância por vez); para
+// duas fichas abertas ao mesmo tempo, migrar actor/editMode para a instância.
 let actor = null;
+let editMode = false;
 // ==========================================================
 // HELPERS
 // ==========================================================
@@ -40,6 +42,7 @@ const esc = (value) => {
     return div.innerHTML;
 };
 const getActor = () => canvas.tokens.controlled[0]?.actor ?? game.user.character ?? actor;
+const canEditActor = (a = actor) => Boolean(game.user?.isGM || a?.isOwner);
 const sys = () => getActor()?.system ?? {};
 const modifier = (value) => {
     const n = Number(value ?? 0);
@@ -102,6 +105,8 @@ const menuView = (a) => {
                 max: '—',
             },
             class: s.class?.base ?? '',
+            subclass: s.class?.subclass ?? '',
+            alignment: s.details?.alignment ?? '',
         },
         skills: Object.fromEntries(
             (s.masteries ?? []).map((m) => [
@@ -440,6 +445,32 @@ function buildRoot() {
           >
             <i class="fas fa-envelope"></i>
           </button>
+
+          ${
+              canEditActor(actor)
+                  ? `
+          <button
+            class="sao-round-button"
+            data-edit-toggle
+            title="Editar"
+          >
+            <i class="fas fa-pen"></i>
+          </button>
+
+          <button
+            class="
+              sao-round-button
+              sao-cancel-button
+            "
+            data-edit-cancel
+            title="Cancelar"
+            hidden
+          >
+            <i class="fas fa-xmark"></i>
+          </button>
+          `
+                  : ''
+          }
 
           <button
             class="
@@ -1087,6 +1118,35 @@ function injectStyle() {
   text-align:center;
   font-family:var(--sao-font-display);
   font-size:var(--sao-fs-md);
+}
+
+#${MENU_ID} .sao-edit-input{
+  width:100%;
+  padding:2px 6px;
+  border:1px solid var(--sao-gold-dim);
+  border-radius:3px;
+  background:rgba(0,0,0,.45);
+  color:var(--sao-ink);
+  font-family:var(--sao-font-ui);
+  font-size:inherit;
+}
+
+#${MENU_ID} .sao-item-delete{
+  margin-left:8px;
+  border:0;
+  background:transparent;
+  color:var(--sao-ink-3);
+  cursor:pointer;
+}
+
+#${MENU_ID} .sao-item-delete:hover{
+  color:var(--sao-danger);
+}
+
+#${MENU_ID} .sao-inventory-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:10px;
 }
 
 #${MENU_ID} .sao-equipped{
@@ -2003,6 +2063,12 @@ function injectStyle() {
   line-height:1;
 }
 
+#${MENU_ID} .sao-cancel-button{
+  width:56px;
+  height:56px;
+  font-size:22px;
+}
+
 #${MENU_ID} .sao-message-count{
   position:absolute;
   top:-4px;
@@ -2070,9 +2136,120 @@ function updateWorldInfo() {
 // ==========================================================
 // PLAYER
 // ==========================================================
+const castEdit = (value, type) =>
+    type === 'text' ? value.trim() : Number.isFinite(Number(value)) ? Number(value) : 0;
+
+const escAttr = (value) => foundry.utils.escapeHTML(String(value ?? ''));
+
+function editInput(path, value, type = 'number') {
+    const inputType = type === 'text' ? 'text' : 'number';
+    return `<input class="sao-edit-input" data-edit data-path="${path}" data-type="${type}" type="${inputType}" value="${escAttr(value)}">`;
+}
+
+function syncEditButtons(root) {
+    const toggle = root?.querySelector('[data-edit-toggle]');
+    if (toggle) {
+        toggle.innerHTML = `<i class="fas ${editMode ? 'fa-check' : 'fa-pen'}"></i>`;
+        toggle.classList.toggle('active', editMode);
+        toggle.title = editMode ? 'Salvar' : 'Editar';
+    }
+    const cancel = root?.querySelector('[data-edit-cancel]');
+    if (cancel) cancel.hidden = !editMode;
+}
+/** Re-renderiza o tab atual do player (ou o equipamento). */
+function rerenderPlayer() {
+    const content = document.getElementById('sao-content');
+    const tab = content?.querySelector('[data-player-tab].active')?.dataset.playerTab;
+    return tab ? renderPlayer(tab) : renderEquipment();
+}
+async function savePlayerEdits(content, target = actor ?? getActor()) {
+    if (!canEditActor(target))
+        return ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
+    const updates = {};
+    content.querySelectorAll('[data-edit][data-path]').forEach((input) => {
+        updates[input.dataset.path] = castEdit(input.value, input.dataset.type);
+    });
+    try {
+        await target.update(updates);
+    } catch (error) {
+        console.error('SAO PLAYER SAVE', error);
+        ui.notifications.error(`Não foi possível salvar as alterações: ${error?.message ?? error}`);
+        return;
+    }
+    editMode = false;
+    rerenderPlayer();
+}
+async function deleteActorItem(itemId) {
+    const target = actor ?? getActor();
+    if (!canEditActor(target))
+        return ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
+    const item = target.items.get(itemId);
+    if (!item) return;
+    const confirmed = await DialogV2.confirm({
+        window: {
+            title: 'EXCLUIR ITEM',
+        },
+        content: `<p>Excluir <strong>${esc(item.name)}</strong>?</p>`,
+    }).catch(() => false);
+    if (!confirmed) return;
+    try {
+        await item.delete();
+    } catch (error) {
+        console.error('SAO ITEM DELETE', error);
+        ui.notifications.error(`Não foi possível excluir o item: ${error?.message ?? error}`);
+        return;
+    }
+    renderPlayer('inventory');
+}
+const ITEM_DEFAULTS = {
+    weapon: { name: 'Nova arma', img: 'icons/svg/sword.svg' },
+    equipment: { name: 'Novo equipamento', img: 'icons/svg/chest.svg' },
+    consumable: { name: 'Novo consumível', img: 'icons/svg/potion.svg' },
+};
+async function createActorItem() {
+    const target = actor ?? getActor();
+    if (!canEditActor(target))
+        return ui.notifications.warn('SAO SYSTEM | Sem permissão para editar.');
+    const type = await DialogV2.prompt({
+        window: { title: 'NOVO ITEM' },
+        content: `
+            <select name="type" style="width:100%">
+                ${Object.entries(TGO.itemTypes)
+                    .map(
+                        ([id, label]) =>
+                            `<option value="${id}">${game.i18n.localize(label)}</option>`
+                    )
+                    .join('')}
+            </select>`,
+        ok: {
+            label: 'CRIAR',
+            callback: (event, button) => button.form.elements.type.value,
+        },
+    }).catch(() => null);
+    if (!type) return;
+    try {
+        const defaults = ITEM_DEFAULTS[type] ?? ITEM_DEFAULTS.equipment;
+        const [item] = await target.createEmbeddedDocuments('Item', [
+            {
+                name: defaults.name,
+                type,
+                img: defaults.img,
+            },
+        ]);
+        item?.sheet?.render({
+            force: true,
+        });
+        renderPlayer('inventory');
+    } catch (error) {
+        console.error('SAO ITEM CREATE', error);
+        ui.notifications.error(`Não foi possível criar o item: ${error?.message ?? error}`);
+    }
+}
+
 function renderPlayer(tab = 'status') {
     actor ??= getActor();
     const s = menuView(actor);
+    const editable = editMode && canEditActor(actor);
     const content = document.getElementById('sao-content');
     const abilities = [
         ['str', 'FOR'],
@@ -2100,7 +2277,7 @@ function renderPlayer(tab = 'status') {
               </div>
 
               <div class="sao-ability-value">
-                ${value}
+                ${editable ? editInput(`system.attributes.${key}.value`, value) : value}
               </div>
 
               <div class="sao-ability-mod">
@@ -2145,11 +2322,11 @@ function renderPlayer(tab = 'status') {
             </div>
 
             <div class="sao-stat-value">
-              ${s.attributes?.hp?.value ?? 0}
+              ${editable ? editInput('system.health.value', s.attributes?.hp?.value ?? 0, 'pool') : (s.attributes?.hp?.value ?? 0)}
 
               <small>
                 /
-                ${s.attributes?.hp?.max ?? 0}
+                ${editable ? editInput('system.health.max', s.attributes?.hp?.max ?? 0, 'pool') : (s.attributes?.hp?.max ?? 0)}
               </small>
             </div>
 
@@ -2174,7 +2351,7 @@ function renderPlayer(tab = 'status') {
             </div>
 
             <div class="sao-stat-value">
-              ${level(actor)}
+              ${editable ? editInput('system.level', level(actor)) : level(actor)}
             </div>
 
           </div>
@@ -2237,13 +2414,6 @@ function renderPlayer(tab = 'status') {
     }
     // INFORMATION
     if (tab === 'information') {
-        const classes =
-            actor.items
-                .filter((i) => i.type === 'class')
-                .map((i) => i.name)
-                .join(', ') || '';
-        const race = actor.items.find((i) => i.type === 'race' || i.type === 'species')?.name ?? '';
-        const background = actor.items.find((i) => i.type === 'background')?.name ?? '';
         body = `
 
         <div class="sao-info-grid">
@@ -2256,37 +2426,37 @@ function renderPlayer(tab = 'status') {
           </div>
 
           <div class="sao-info-card">
-            <span>LEVEL</span>
-            <strong>
-              ${level(actor)}
-            </strong>
-          </div>
-
-          <div class="sao-info-card">
             <span>CLASS</span>
             <strong>
-              ${esc(classes)}
+              ${editable ? editInput('system.class.base', s.details?.class ?? '', 'text') : esc(s.details?.class ?? '')}
             </strong>
           </div>
 
           <div class="sao-info-card">
-            <span>RACE</span>
+            <span>SUBCLASS</span>
             <strong>
-              ${esc(race)}
+              ${editable ? editInput('system.class.subclass', s.details?.subclass ?? '', 'text') : esc(s.details?.subclass ?? '')}
             </strong>
           </div>
 
           <div class="sao-info-card">
-            <span>BACKGROUND</span>
+            <span>LEVEL</span>
             <strong>
-              ${esc(background)}
+              ${editable ? editInput('system.level', level(actor)) : level(actor)}
+            </strong>
+          </div>
+
+          <div class="sao-info-card">
+            <span>XP</span>
+            <strong>
+              ${editable ? editInput('system.xp', s.details?.xp?.value ?? 0) : (s.details?.xp?.value ?? 0)}
             </strong>
           </div>
 
           <div class="sao-info-card">
             <span>ALIGNMENT</span>
             <strong>
-              ${esc(s.details?.alignment ?? '')}
+              ${editable ? editInput('system.details.alignment', s.details?.alignment ?? '', 'text') : esc(s.details?.alignment ?? '')}
             </strong>
           </div>
 
@@ -2296,13 +2466,32 @@ function renderPlayer(tab = 'status') {
     }
     // INVENTORY
     if (tab === 'inventory') {
-        const items = actor.items.contents.filter(
-            (i) => !['class', 'race', 'species', 'background'].includes(i.type)
-        );
-        body = items.length
-            ? items
-                  .map(
-                      (i) => `
+        const items = actor.items.contents;
+        body = `
+
+        <div class="sao-inventory-actions">
+
+          ${
+              canEditActor(actor)
+                  ? `
+                <button
+                  class="sao-action primary"
+                  data-create-item
+                >
+                  <i class="fas fa-plus"></i>
+                  NOVO ITEM
+                </button>
+              `
+                  : ''
+          }
+
+        </div>
+
+        ${
+            items.length
+                ? items
+                      .map(
+                          (i) => `
 
                 <div
                   class="sao-item"
@@ -2341,16 +2530,32 @@ function renderPlayer(tab = 'status') {
                     ×${i.system?.quantity ?? 1}
                   </div>
 
+                  ${
+                      canEditActor(actor)
+                          ? `
+                        <button
+                          class="sao-item-delete"
+                          data-delete-item="${i.id}"
+                          title="Excluir"
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      `
+                          : ''
+                  }
+
                 </div>
 
               `
-                  )
-                  .join('')
-            : `
+                      )
+                      .join('')
+                : `
           <div class="sao-empty">
             INVENTORY EMPTY
           </div>
-        `;
+        `
+        }
+      `;
     }
     content.innerHTML = `
 
@@ -2419,80 +2624,43 @@ function renderPlayer(tab = 'status') {
             if (item) openItem(item, () => renderPlayer(tab));
         };
     });
+    content.querySelectorAll('[data-create-item]').forEach((button) => {
+        button.onclick = () => createActorItem();
+    });
+    content.querySelectorAll('[data-delete-item]').forEach((button) => {
+        button.onclick = async (event) => {
+            event.stopPropagation();
+            await deleteActorItem(button.dataset.deleteItem);
+        };
+    });
 }
 // ==========================================================
 // WEAPON HAND SYSTEM
 // ==========================================================
-function hasWeaponProperty(item, property) {
-    const props = item?.system?.properties;
-    if (!props) return false;
-    if (typeof props.has === 'function') {
-        return props.has(property);
-    }
-    if (Array.isArray(props)) {
-        return props.includes(property);
-    }
-    if (typeof props === 'object') {
-        return !!props[property];
-    }
-    return false;
-}
-
-function isTwoHanded(item) {
-    return item?.type === 'weapon' && hasWeaponProperty(item, 'two');
-}
-
-function getWeaponHand(item) {
-    if (!item || item.type !== 'weapon') return null;
-    if (isTwoHanded(item)) return 'both';
-    return item.flags?.[FLAG_SCOPE]?.[HAND_FLAG] ?? 'right';
-}
-async function setWeaponHand(item, hand) {
-    return item.update({
-        [`flags.${FLAG_SCOPE}.${HAND_FLAG}`]: hand,
-    });
-}
-async function clearWeaponHand(item) {
-    try {
-        await item.update({
-            [`flags.${FLAG_SCOPE}.-=${HAND_FLAG}`]: null,
-        });
-    } catch (error) {
-        console.warn('SAO HAND FLAG', error);
-    }
-}
+const isTwoHanded = (item) => item?.type === 'weapon' && Number(item.system?.hands ?? 1) === 2;
+const getWeaponHand = (item) => (item?.type === 'weapon' ? item.system?.hand || 'right' : null);
 async function equipWeapon(item, hand = 'right') {
     if (!item || item.type !== 'weapon') return false;
-    const twoHanded = isTwoHanded(item);
-    const targetHand = twoHanded ? 'both' : hand === 'left' ? 'left' : 'right';
-    const weapons = actor.items.contents.filter(
-        (i) => i.type === 'weapon' && i.id !== item.id && i.system?.equipped
-    );
-    // TWO HANDS
-    if (twoHanded) {
-        for (const other of weapons) {
-            await other.update({
-                'system.equipped': false,
-            });
-            await clearWeaponHand(other);
-        }
-    }
-    // ONE HAND
-    else {
-        for (const other of weapons) {
-            const otherHand = getWeaponHand(other);
-            if (otherHand === 'both' || otherHand === targetHand) {
-                await other.update({
-                    'system.equipped': false,
-                });
-                await clearWeaponHand(other);
-            }
-        }
-    }
+    const target = item.actor;
+    if (!target) return false;
+    const targetHand = isTwoHanded(item) ? '' : hand === 'left' ? 'left' : 'right';
+    const updates = target.items.contents
+        .filter(
+            (other) =>
+                other.type === 'weapon' &&
+                other.id !== item.id &&
+                other.system?.equipped &&
+                (!targetHand || isTwoHanded(other) || getWeaponHand(other) === targetHand)
+        )
+        .map((other) => ({
+            _id: other.id,
+            'system.equipped': false,
+        }));
+    if (updates.length) await target.updateEmbeddedDocuments('Item', updates);
     await item.update({
         'system.equipped': true,
+        'system.hand': targetHand,
     });
-    await setWeaponHand(item, targetHand);
     return true;
 }
 async function unequipItem(item) {
@@ -2500,9 +2668,6 @@ async function unequipItem(item) {
     await item.update({
         'system.equipped': false,
     });
-    if (item.type === 'weapon') {
-        await clearWeaponHand(item);
-    }
 }
 // ==========================================================
 // EQUIPMENT SLOT DETECTION
@@ -2511,52 +2676,16 @@ function equippedForSlot(slot, items) {
     const eq = items.filter(
         (i) => i.system?.equipped && (i.type === 'weapon' || i.type === 'equipment')
     );
-    const keywords = {
-        head: ['helmet', 'helm', 'cap', 'hat', 'crown', 'head', 'elmo', 'capacete', 'coroa'],
-        armor: [
-            'armor',
-            'armour',
-            'breastplate',
-            'plate',
-            'mail',
-            'robe',
-            'tunic',
-            'chest',
-            'armadura',
-            'peitoral',
-            'couraça',
-        ],
-        feet: ['boots', 'boot', 'shoes', 'shoe', 'greaves', 'feet', 'bota', 'botas', 'sapato'],
-        acc1: ['ring', 'amulet', 'necklace', 'earring', 'bracelet', 'anel', 'colar', 'brinco'],
-        acc2: ['ring', 'amulet', 'necklace', 'earring', 'bracelet', 'anel', 'colar', 'brinco'],
-    };
     if (slot === 'lhand' || slot === 'rhand') {
         const wanted = slot === 'lhand' ? 'left' : 'right';
         return (
-            eq.find((item) => {
-                if (item.type !== 'weapon') return false;
-                const hand = getWeaponHand(item);
-                return hand === wanted || hand === 'both';
-            }) ?? null
-        );
-    }
-    if (slot === 'armor') {
-        return (
             eq.find(
-                (i) =>
-                    i.type === 'equipment' && (i.system?.armor || i.system?.type?.value === 'armor')
+                (item) =>
+                    item.type === 'weapon' && (isTwoHanded(item) || getWeaponHand(item) === wanted)
             ) ?? null
         );
     }
-    if (['head', 'feet', 'acc1', 'acc2'].includes(slot)) {
-        return (
-            eq.find((i) => {
-                const name = i.name.toLowerCase();
-                return keywords[slot]?.some((key) => name.includes(key));
-            }) ?? null
-        );
-    }
-    return null;
+    return eq.find((item) => item.type === 'equipment' && item.system?.slot === slot) ?? null;
 }
 // ==========================================================
 // EQUIPMENT SCREEN
@@ -2867,9 +2996,10 @@ function openEquipSlot(slot) {
     let items = actor.items.contents.filter((i) => i.type === 'weapon' || i.type === 'equipment');
     if (slot === 'lhand' || slot === 'rhand') {
         items = items.filter((i) => i.type === 'weapon');
-    }
-    if (slot === 'armor') {
-        items = items.filter((i) => i.type === 'equipment');
+    } else {
+        items = items.filter(
+            (i) => i.type === 'equipment' && (!i.system?.slot || i.system.slot === slot)
+        );
     }
     const overlay = document.createElement('div');
     overlay.className = 'sao-modal';
@@ -2978,8 +3108,20 @@ function openEquipSlot(slot) {
                 if (item.type === 'weapon') {
                     await equipWeapon(item, slot === 'lhand' ? 'left' : 'right');
                 } else {
+                    const conflict = item.actor.items.contents
+                        .filter(
+                            (other) =>
+                                other.type === 'equipment' &&
+                                other.id !== item.id &&
+                                other.system?.equipped &&
+                                other.system?.slot === slot
+                        )
+                        .map((other) => ({ _id: other.id, 'system.equipped': false }));
+                    if (conflict.length)
+                        await item.actor.updateEmbeddedDocuments('Item', conflict);
                     await item.update({
                         'system.equipped': true,
+                        'system.slot': slot,
                     });
                 }
                 overlay.remove();
@@ -3003,9 +3145,7 @@ function openItem(item, returnFunction) {
     overlay.className = 'sao-modal';
     const equipped = item.system?.equipped ?? false;
     const quantity = Number(item.system?.quantity ?? 1);
-    const description = item.system?.description?.value ?? item.description ?? 'NO DESCRIPTION';
-    const damage = item.system?.damage?.base?.formula ?? item.system?.damage?.parts?.[0]?.[0] ?? '';
-    const weight = item.system?.weight?.value ?? item.system?.weight ?? 0;
+    const description = item.system?.description || 'NO DESCRIPTION';
     const equipable = item.type === 'weapon' || item.type === 'equipment';
     const weapon = item.type === 'weapon';
     const twoHanded = isTwoHanded(item);
@@ -3059,16 +3199,6 @@ function openItem(item, returnFunction) {
           <b>QUANTITY:</b>
           ${quantity}
 
-          <br>
-
-          <b>WEIGHT:</b>
-          ${esc(weight)}
-
-          <br>
-
-          <b>DAMAGE:</b>
-          ${esc(damage)}
-
           ${
               weapon
                   ? `
@@ -3083,9 +3213,29 @@ function openItem(item, returnFunction) {
                   : ''
           }
 
+          ${
+              item.type === 'equipment'
+                  ? `
+
+                <br>
+
+                <b>SLOT:</b>
+
+                ${esc(item.system?.slot ? game.i18n.localize(TGO.equipmentSlots[item.system.slot]) : '—')}
+
+                <br>
+
+                <b>CA:</b>
+
+                ${Number(item.system?.armor ?? 0)}
+
+              `
+                  : ''
+          }
+
           <br><br>
 
-          ${description}
+          ${esc(description)}
 
         </div>
 
@@ -3196,14 +3346,26 @@ function openItem(item, returnFunction) {
                 if (action === 'equip') {
                     if (item.system?.equipped) {
                         await unequipItem(item);
+                    } else if (item.type === 'weapon') {
+                        await equipWeapon(item, 'right');
+                    } else if (item.system?.slot) {
+                        const conflict = item.actor.items.contents
+                            .filter(
+                                (other) =>
+                                    other.type === 'equipment' &&
+                                    other.id !== item.id &&
+                                    other.system?.equipped &&
+                                    other.system?.slot === item.system.slot
+                            )
+                            .map((other) => ({ _id: other.id, 'system.equipped': false }));
+                        if (conflict.length)
+                            await item.actor.updateEmbeddedDocuments('Item', conflict);
+                        await item.update({
+                            'system.equipped': true,
+                        });
                     } else {
-                        if (item.type === 'weapon') {
-                            await equipWeapon(item, 'right');
-                        } else {
-                            await item.update({
-                                'system.equipped': true,
-                            });
-                        }
+                        ui.notifications.warn('Defina o slot do equipamento na ficha do item.');
+                        return;
                     }
                     overlay.remove();
                     returnFunction();
@@ -5170,7 +5332,7 @@ class SAOSystemMenu extends ActorSheetV2 {
             window: {
                 title: 'ALTERAR NOME',
             },
-            content: `<input type="text" name="name" value="${esc(actor.name)}" autofocus>`,
+            content: `<input type="text" name="name" value="${escAttr(actor.name)}" autofocus>`,
             ok: {
                 label: 'SALVAR',
                 callback: (event, button) => button.form.elements.name.value.trim(),
@@ -5217,9 +5379,31 @@ class SAOSystemMenu extends ActorSheetV2 {
         root.querySelectorAll('[data-name]').forEach((element) => {
             element.onclick = () => this._editName();
         });
+        root.querySelectorAll('[data-edit-toggle]').forEach((button) => {
+            button.onclick = () => {
+                if (!editMode) {
+                    editMode = true;
+                    syncEditButtons(root);
+                    rerenderPlayer();
+                    return;
+                }
+                savePlayerEdits(root, this.actor ?? getActor()).then(() =>
+                    syncEditButtons(root)
+                );
+            };
+        });
+        root.querySelectorAll('[data-edit-cancel]').forEach((button) => {
+            button.onclick = () => {
+                editMode = false;
+                syncEditButtons(root);
+                rerenderPlayer();
+            };
+        });
+        syncEditButtons(root);
         if (!this._abilityBound) {
             this._abilityBound = true;
             root.addEventListener('click', (event) => {
+                if (event.target.closest?.('input, select, textarea, button')) return;
                 const element = event.target.closest?.('[data-ability]');
                 if (element)
                     this._rollAbility(element.dataset.ability, element.dataset.abilityLabel);
@@ -5232,6 +5416,7 @@ class SAOSystemMenu extends ActorSheetV2 {
         this._bindHooks();
     }
     _onClose() {
+        editMode = false;
         this._unbindHooks();
         document.getElementById(STYLE_ID)?.remove();
     }

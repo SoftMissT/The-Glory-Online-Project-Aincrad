@@ -13,7 +13,7 @@ import {
     normalizeRecords,
     normalizePins,
 } from '../src/apps/journal-hud-data.mjs';
-import { buildRoot, renderPage } from '../src/apps/journal-hud-view.mjs';
+import { HUD_ASSETS, buildRoot, renderPage } from '../src/apps/journal-hud-view.mjs';
 const UI = {
     selected: {
         lore: 0,
@@ -161,6 +161,21 @@ test('página de quests escapa conteúdo e monta objetivo, recompensa e CTA', ()
     assert.match(html, /data-hud-close/);
     assert.match(html, /width:60%/);
 });
+test('recompensa reconhecida usa a arte de item correspondente', () => {
+    const html = renderPage(
+        'quests',
+        {
+            quests: [
+                {
+                    title: 'A chave',
+                    reward: 'Chave de Aincrad',
+                },
+            ],
+        },
+        UI
+    );
+    assert.match(html, /assets\/item-chave\.webp/);
+});
 test('páginas vazias mostram estado vazio, não quebram', () => {
     for (const tab of ['lore', 'events', 'npcs', 'system']) {
         const html = renderPage(tab, {}, UI);
@@ -177,7 +192,36 @@ test('páginas vazias mostram estado vazio, não quebram', () => {
         /tgo-hud-empty/
     );
 });
-test('mapa sem imagem mostra aviso e controles desativados', () => {
+test('HUD usa o pacote visual de Aincrad', () => {
+    const root = buildRoot('lore');
+    assert.match(root, /assets\/crest-mark\.webp/);
+    assert.match(
+        renderPage(
+            'npcs',
+            {
+                npcs: [
+                    {
+                        name: 'Guardião',
+                    },
+                ],
+            },
+            UI
+        ),
+        /assets\/npc-placeholder\.webp/
+    );
+    assert.match(
+        renderPage(
+            'map',
+            {
+                pins: [],
+            },
+            UI
+        ),
+        /assets\/map-floor-1\.webp/
+    );
+    assert.equal(HUD_ASSETS.items.length, 6);
+});
+test('mapa sem imagem usa o primeiro andar padrão', () => {
     const html = renderPage(
         'map',
         {
@@ -185,8 +229,9 @@ test('mapa sem imagem mostra aviso e controles desativados', () => {
         },
         UI
     );
-    assert.match(html, /Mapa não configurado/);
-    assert.match(html, /data-map-center aria-label="Centralizar" disabled/);
+    assert.match(html, /assets\/map-floor-1\.webp/);
+    assert.match(html, /AINCRAD · PRIMEIRO ANDAR/);
+    assert.doesNotMatch(html, /Mapa não configurado/);
     assert.equal((html.match(/data-map-type="/g) ?? []).length, 3);
 });
 test('mapa com pinos posiciona e lista os locais', () => {

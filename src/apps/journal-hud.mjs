@@ -382,11 +382,12 @@ Hooks.on('init', () => {
     game.theGloryOnline ??= {};
     game.theGloryOnline.openJournal = () => toggleJournal();
 });
-
 Hooks.on('ready', () => {
     game.socket?.on('system.the-glory-online', (payload) => {
         if (payload?.type !== 'hud-refresh' || !hud?.rendered) return;
         hud._data = null;
-        hud.render({ force: true });
+        hud.render({
+            force: true,
+        });
     });
 });

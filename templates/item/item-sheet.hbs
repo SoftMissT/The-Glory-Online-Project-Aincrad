@@ -1,0 +1,86 @@
+<div class='tgo-item-sheet'>
+    <header class='tgo-item-header'>
+        <img
+            class='tgo-item-img'
+            src='{{document.img}}'
+            alt='{{document.name}}'
+            data-action='editImage'
+            data-edit='img'
+        />
+        <label class='tgo-field'>
+            <span class='tgo-k'>{{localize 'TGO.Item.name'}}</span>
+            <input type='text' name='name' value='{{document.name}}' />
+        </label>
+        <label class='tgo-item-check' title='{{localize "TGO.Item.equipHint"}}'>
+            <input
+                type='checkbox'
+                name='system.equipped'
+                {{checked system.equipped}}
+                {{#if isEquipment}}{{#unless system.slot}}{{#unless system.equipped}}disabled{{/unless}}{{/unless}}{{/if}}
+            />
+            <span class='tgo-k'>{{localize 'TGO.Item.equipped'}}</span>
+        </label>
+    </header>
+
+    <label class='tgo-field'>
+        <span class='tgo-k'>{{localize 'TGO.Item.quantity'}}</span>
+        <input type='number' name='system.quantity' value='{{system.quantity}}' min='0' step='1' />
+    </label>
+
+    {{#if isWeapon}}
+        <div class='tgo-item-row'>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Item.hands'}}</span>
+                <select name='system.hands'>
+                    <option value='1' {{#if (eq system.hands 1)}}selected{{/if}}>
+                        {{localize 'TGO.Item.handsOne'}}
+                    </option>
+                    <option value='2' {{#if (eq system.hands 2)}}selected{{/if}}>
+                        {{localize 'TGO.Item.handsTwo'}}
+                    </option>
+                </select>
+            </label>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Item.hand'}}</span>
+                <select name='system.hand'>
+                    <option value='' {{#if (eq system.hand '')}}selected{{/if}}>
+                        {{localize 'TGO.Item.handNone'}}
+                    </option>
+                    <option value='left' {{#if (eq system.hand 'left')}}selected{{/if}}>
+                        {{localize 'TGO.Item.handLeft'}}
+                    </option>
+                    <option value='right' {{#if (eq system.hand 'right')}}selected{{/if}}>
+                        {{localize 'TGO.Item.handRight'}}
+                    </option>
+                </select>
+            </label>
+        </div>
+    {{/if}}
+
+    {{#if isEquipment}}
+        <div class='tgo-item-row'>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Item.slot'}}</span>
+                <select name='system.slot'>
+                    <option value='' {{#if (eq system.slot '')}}selected{{/if}}>
+                        {{localize 'TGO.Item.slotNone'}}
+                    </option>
+                    {{#each slotOptions}}
+                        <option value='{{this.value}}' {{#if (eq this.value ../system.slot)}}selected{{/if}}>
+                            {{this.label}}
+                        </option>
+                    {{/each}}
+                </select>
+            </label>
+            <label class='tgo-field'>
+                <span class='tgo-k'>{{localize 'TGO.Item.armor'}}</span>
+                <input type='number' name='system.armor' value='{{system.armor}}' step='1' />
+            </label>
+        </div>
+    {{/if}}
+
+    <label class='tgo-field'>
+        <span class='tgo-k'>{{localize 'TGO.Item.description'}}</span>
+        <textarea name='system.description' rows='10'>{{system.description}}</textarea>
+    </label>
+</div>
