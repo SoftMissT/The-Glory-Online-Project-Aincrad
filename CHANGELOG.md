@@ -3,6 +3,12 @@
 Todas as mudanças notáveis do sistema **The Glory Online: Project Aincrad**.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.0.8] - 2026-10-23
+
+### Corrigido
+
+- Imagem de fundo do sistema na tela de Setup do Foundry: `media` com `type: "setup"` apontando para `assets/cover-setup.webp` e a miniatura `assets/cover-setup-thumb.webp`.
+
 ## [0.0.7] - 2026-10-22
 
 ### Adicionado
